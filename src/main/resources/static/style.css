@@ -1,0 +1,233 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #263238;
+}
+
+header {
+    background: #263238;
+    color: white;
+    padding: 22px 5%;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin: 5px 0 0;
+    opacity: .8;
+}
+
+main {
+    max-width: 1200px;
+    margin: 25px auto;
+    padding: 0 20px;
+}
+
+.filtros {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.filtros h2 {
+    min-width: 180px;
+    text-align: center;
+}
+
+.filtros button {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.resumo {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.card span {
+    display: block;
+    color: #607d8b;
+    margin-bottom: 8px;
+}
+
+.card strong {
+    font-size: 24px;
+}
+
+.receita strong {
+    color: #2e7d32;
+}
+
+.despesa strong {
+    color: #c62828;
+}
+
+.saldo strong {
+    color: #1565c0;
+}
+
+.acoes {
+    margin: 20px 0;
+    text-align: right;
+}
+
+button {
+    cursor: pointer;
+}
+
+.btn-principal {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 18px;
+    background: #1565c0;
+    color: white;
+    font-weight: bold;
+}
+
+.btn-secundario {
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    padding: 11px 18px;
+    background: white;
+}
+
+.tabela-container {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.tipo-receita {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+.tipo-despesa {
+    color: #c62828;
+    font-weight: bold;
+}
+
+.btn-editar, .btn-excluir {
+    border: 0;
+    background: transparent;
+    margin-left: 5px;
+}
+
+.btn-editar {
+    color: #1565c0;
+}
+
+.btn-excluir {
+    color: #c62828;
+}
+
+.sem-lancamentos {
+    text-align: center;
+    color: #78909c;
+    padding: 20px;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.escondido {
+    display: none;
+}
+
+.modal-conteudo {
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.modal-cabecalho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fechar {
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+}
+
+form label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+form input,
+form select {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    font-size: 16px;
+}
+
+.form-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+@media (max-width: 700px) {
+    .resumo {
+        grid-template-columns: 1fr;
+    }
+
+    th:nth-child(3),
+    td:nth-child(3) {
+        display: none;
+    }
+
+    .acoes {
+        text-align: center;
+    }
+}
