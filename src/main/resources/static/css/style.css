@@ -264,3 +264,15 @@ form select {
         width: 96%;
     }
 }
+
+.summary-grid-extrato { grid-template-columns: repeat(4, 1fr); }
+.table-header { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.table-header span { color:#6b7280; font-size:14px; }
+th.sortable { cursor:pointer; user-select:none; }
+th.sortable:hover { background:#f3f4f6; }
+.sort-indicator { display:inline; margin-left:4px; font-size:11px; }
+.valor-lancamento { font-weight:bold; }
+.valor-receita { color:#15803d; }
+.valor-despesa { color:#dc2626; }
+@media (max-width: 900px) { .summary-grid-extrato { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .summary-grid-extrato { grid-template-columns: 1fr; } .table-header { align-items:flex-start; flex-direction:column; } }

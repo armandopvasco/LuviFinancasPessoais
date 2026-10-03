@@ -6,6 +6,7 @@ import br.com.luvi.financaspessoais.lancamento.enums.TipoLancamento;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record LancamentoResponse(
         Long id,
@@ -13,17 +14,14 @@ public record LancamentoResponse(
         String descricao,
         Categoria categoria,
         BigDecimal valor,
-        LocalDate data
+        LocalDate data,
+        LocalDateTime dataHoraCadastro
 ) {
-
     public static LancamentoResponse from(Lancamento lancamento) {
         return new LancamentoResponse(
-                lancamento.getId(),
-                lancamento.getTipo(),
-                lancamento.getDescricao(),
-                lancamento.getCategoria(),
-                lancamento.getValor(),
-                lancamento.getData()
+                lancamento.getId(), lancamento.getTipo(), lancamento.getDescricao(),
+                lancamento.getCategoria(), lancamento.getValor(), lancamento.getData(),
+                lancamento.getDataHoraCadastro()
         );
     }
 }

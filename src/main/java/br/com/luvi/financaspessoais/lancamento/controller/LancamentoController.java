@@ -2,6 +2,7 @@ package br.com.luvi.financaspessoais.lancamento.controller;
 
 import br.com.luvi.financaspessoais.lancamento.dto.LancamentoRequest;
 import br.com.luvi.financaspessoais.lancamento.dto.LancamentoResponse;
+import br.com.luvi.financaspessoais.lancamento.dto.ResumoMensalResponse;
 import br.com.luvi.financaspessoais.lancamento.service.LancamentoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,17 @@ public class LancamentoController {
         int anoConsulta = ano != null ? ano : hoje.getYear();
 
         return service.listarPorMes(mesConsulta, anoConsulta);
+    }
+
+    @GetMapping("/resumo")
+    public ResumoMensalResponse resumo(
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano) {
+
+        LocalDate hoje = LocalDate.now();
+        int mesConsulta = mes != null ? mes : hoje.getMonthValue();
+        int anoConsulta = ano != null ? ano : hoje.getYear();
+        return service.resumoPorMes(mesConsulta, anoConsulta);
     }
 
     @GetMapping("/{id}")

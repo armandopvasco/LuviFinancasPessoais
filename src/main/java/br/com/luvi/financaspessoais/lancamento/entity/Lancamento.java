@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lancamentos")
@@ -32,47 +33,26 @@ public class Lancamento {
     @Column(nullable = false)
     private LocalDate data;
 
-    public Long getId() {
-        return id;
+    @Column(name = "data_hora_cadastro")
+    private LocalDateTime dataHoraCadastro;
+
+    @PrePersist
+    public void prePersist() {
+        if (dataHoraCadastro == null) {
+            dataHoraCadastro = LocalDateTime.now();
+        }
     }
 
-    public TipoLancamento getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(TipoLancamento tipo) {
-        this.tipo = tipo;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-    public BigDecimal getValor() {
-        return valor;
-    }
-
-    public void setValor(BigDecimal valor) {
-        this.valor = valor;
-    }
-
-    public LocalDate getData() {
-        return data;
-    }
-
-    public void setData(LocalDate data) {
-        this.data = data;
-    }
+    public Long getId() { return id; }
+    public TipoLancamento getTipo() { return tipo; }
+    public void setTipo(TipoLancamento tipo) { this.tipo = tipo; }
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public Categoria getCategoria() { return categoria; }
+    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+    public BigDecimal getValor() { return valor; }
+    public void setValor(BigDecimal valor) { this.valor = valor; }
+    public LocalDate getData() { return data; }
+    public void setData(LocalDate data) { this.data = data; }
+    public LocalDateTime getDataHoraCadastro() { return dataHoraCadastro; }
 }
