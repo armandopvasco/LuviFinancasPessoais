@@ -1,58 +1,77 @@
-# Luvi Finanças Pessoais
+# LUVI Finanças Pessoais
 
-Sistema simples para controle mensal de receitas e despesas.
+Aplicação simples para controle de receitas e despesas familiares.
 
 ## Tecnologias
 
 - Java 17
-- Spring Boot
+- Spring Boot 3.5.6
 - Spring Web
 - Spring Data JPA
-- Hibernate
+- Spring Security
+- Thymeleaf
 - PostgreSQL
-- HTML
-- CSS
-- JavaScript
+- HTML/CSS/JavaScript
 
-## Banco de dados
+## Variáveis de ambiente
 
-Crie o banco no PostgreSQL:
+### Autenticação da aplicação
+A aplicação possui um único acesso compartilhado.
+
+As credenciais NÃO ficam gravadas no código.
+
+Configure:
+
+```text
+LUVI_APP_USERNAME=<usuário-aplicação>
+LUVI_APP_PASSWORD=<senha-aplicação>
+```
+
+A senha é transformada em hash BCrypt em memória quando a aplicação inicia.
+
+### Outras: Obrigatórias em produção
+
+```text
+LUVI_DB_URL=<URL-do-banco>
+LUVI_DB_USERNAME=<usuario-do-banco>
+LUVI_DB_PASSWORD=<senha-do-banco>
+LUVI_JPA_DDL_AUTO=update
+LUVI_JPA_SHOW_SQL=false
+PORT=8080
+```
+
+## Criar banco Postgree local
+
+Criação do banco:
 
 ```sql
 CREATE DATABASE luvi_financas;
 ```
 
-Depois ajuste usuário e senha em:
+## IntelliJ
 
-`src/main/resources/application.properties`
+Você pode configurar as variáveis em:
 
-Por padrão o projeto está configurado para:
+Run > Edit Configurations > Environment variables
 
-- host: localhost
-- porta: 5432
-- banco: luvi_financas
-- usuário: postgres
-- senha: postgres
+OBS.: Não coloque senhas no `application.properties`.
 
 ## Executar
 
-No IntelliJ, execute:
+Execute `LuviFinancasPessoaisApplication`.
 
-`LuviFinancasPessoaisApplication`
+Abra no navegador:
 
-Depois acesse:
+```text
+http://localhost:8080
+```
 
-`http://localhost:8080`
+## Hospedagem
 
-O Hibernate criará/atualizará a tabela `lancamentos` automaticamente.
+Na hospedagem, configure as mesmas variáveis de ambiente no painel da plataforma.
 
-## Funcionalidades
+A aplicação usa `PORT` quando a plataforma fornece essa variável.
 
-- Cadastrar receita
-- Cadastrar despesa
-- Editar lançamento
-- Excluir lançamento
-- Filtrar por mês
-- Visualizar total de receitas
-- Visualizar total de despesas
-- Visualizar saldo mensal
+O PostgreSQL pode estar no mesmo servidor ou em um serviço PostgreSQL externo.
+
+Para publicação na internet, use HTTPS no domínio/proxy da hospedagem.

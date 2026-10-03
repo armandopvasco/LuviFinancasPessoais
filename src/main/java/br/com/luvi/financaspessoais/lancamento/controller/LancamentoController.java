@@ -4,15 +4,15 @@ import br.com.luvi.financaspessoais.lancamento.dto.LancamentoRequest;
 import br.com.luvi.financaspessoais.lancamento.dto.LancamentoResponse;
 import br.com.luvi.financaspessoais.lancamento.service.LancamentoService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/lancamentos")
-@CrossOrigin(origins = "*")
 public class LancamentoController {
 
     private final LancamentoService service;
@@ -22,9 +22,14 @@ public class LancamentoController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public LancamentoResponse criar(@Valid @RequestBody LancamentoRequest request) {
-        return service.criar(request);
+    public ResponseEntity<LancamentoResponse> criar(
+            @Valid @RequestBody LancamentoRequest request) {
+
+        LancamentoResponse response = service.criar(request);
+
+        return ResponseEntity
+                .created(URI.create("/api/lancamentos/" + response.id()))
+                .body(response);
     }
 
     @GetMapping
@@ -34,15 +39,10 @@ public class LancamentoController {
 
         LocalDate hoje = LocalDate.now();
 
-        if (mes == null) {
-            mes = hoje.getMonthValue();
-        }
+        int mesConsulta = mes != null ? mes : hoje.getMonthValue();
+        int anoConsulta = ano != null ? ano : hoje.getYear();
 
-        if (ano == null) {
-            ano = hoje.getYear();
-        }
-
-        return service.listar(mes, ano);
+        return service.listarPorMes(mesConsulta, anoConsulta);
     }
 
     @GetMapping("/{id}")
@@ -59,8 +59,8 @@ public class LancamentoController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
         service.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 }

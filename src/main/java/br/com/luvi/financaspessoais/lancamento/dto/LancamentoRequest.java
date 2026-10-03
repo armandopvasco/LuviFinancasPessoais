@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record LancamentoRequest(
-
         @NotNull(message = "O tipo é obrigatório")
         TipoLancamento tipo,
 

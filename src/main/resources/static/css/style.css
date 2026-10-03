@@ -1,0 +1,266 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.topbar {
+    background: #1f2937;
+    color: white;
+    padding: 16px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.topbar h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+}
+
+.topbar span {
+    color: #d1d5db;
+    font-size: 13px;
+}
+
+.logout-button {
+    background: transparent;
+    border: 1px solid #9ca3af;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.container {
+    width: min(1200px, 94%);
+    margin: 25px auto;
+}
+
+.month-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+    margin-bottom: 20px;
+}
+
+.month-navigation h2 {
+    min-width: 180px;
+    text-align: center;
+    margin: 0;
+}
+
+.secondary-button,
+.primary-button {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.secondary-button {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+.primary-button {
+    background: #2563eb;
+    color: white;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.summary-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.summary-card span {
+    color: #6b7280;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.summary-card strong {
+    font-size: 24px;
+}
+
+.actions {
+    margin: 20px 0;
+}
+
+.table-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.table-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table-header h2 {
+    margin: 0;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 13px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+th {
+    background: #f9fafb;
+}
+
+.tipo-receita {
+    color: #15803d;
+    font-weight: bold;
+}
+
+.tipo-despesa {
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.acao {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.acao.editar {
+    color: #2563eb;
+}
+
+.acao.excluir {
+    color: #dc2626;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: #6b7280;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    width: min(500px, 100%);
+    border-radius: 14px;
+    padding: 22px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.close-button {
+    background: transparent;
+    border: 0;
+    font-size: 28px;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+form label {
+    display: block;
+    margin: 12px 0 6px;
+    font-weight: bold;
+}
+
+form input,
+form select {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.modal-actions button {
+    margin-top: 0;
+}
+
+.form-error {
+    color: #b91c1c;
+    margin-top: 12px;
+    min-height: 18px;
+}
+
+@media (max-width: 700px) {
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-card strong {
+        font-size: 21px;
+    }
+
+    .topbar {
+        padding: 14px 4%;
+    }
+
+    .topbar h1 {
+        font-size: 18px;
+    }
+
+    .container {
+        width: 96%;
+    }
+}

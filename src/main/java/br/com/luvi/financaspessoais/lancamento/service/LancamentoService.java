@@ -22,57 +22,53 @@ public class LancamentoService {
 
     @Transactional
     public LancamentoResponse criar(LancamentoRequest request) {
-        Lancamento lancamento = new Lancamento(
-                null,
-                request.tipo(),
-                request.descricao().trim(),
-                request.categoria(),
-                request.valor(),
-                request.data()
-        );
-
-        return LancamentoResponse.fromEntity(repository.save(lancamento));
+        Lancamento lancamento = new Lancamento();
+        atualizarDados(lancamento, request);
+        return LancamentoResponse.from(repository.save(lancamento));
     }
 
     @Transactional(readOnly = true)
-    public List<LancamentoResponse> listar(Integer mes, Integer ano) {
-        YearMonth periodo = YearMonth.of(ano, mes);
-        LocalDate inicio = periodo.atDay(1);
-        LocalDate fim = periodo.atEndOfMonth();
+    public List<LancamentoResponse> listarPorMes(int mes, int ano) {
+        YearMonth yearMonth = YearMonth.of(ano, mes);
+        LocalDate inicio = yearMonth.atDay(1);
+        LocalDate fim = yearMonth.atEndOfMonth();
 
         return repository.findByDataBetweenOrderByDataAscIdAsc(inicio, fim)
                 .stream()
-                .map(LancamentoResponse::fromEntity)
+                .map(LancamentoResponse::from)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public LancamentoResponse buscarPorId(Long id) {
         return repository.findById(id)
-                .map(LancamentoResponse::fromEntity)
-                .orElseThrow(() -> new RuntimeException("Lançamento não encontrado"));
+                .map(LancamentoResponse::from)
+                .orElseThrow(() -> new IllegalArgumentException("Lançamento não encontrado"));
     }
 
     @Transactional
     public LancamentoResponse atualizar(Long id, LancamentoRequest request) {
         Lancamento lancamento = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lançamento não encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Lançamento não encontrado"));
 
-        lancamento.setTipo(request.tipo());
-        lancamento.setDescricao(request.descricao().trim());
-        lancamento.setCategoria(request.categoria());
-        lancamento.setValor(request.valor());
-        lancamento.setData(request.data());
-
-        return LancamentoResponse.fromEntity(repository.save(lancamento));
+        atualizarDados(lancamento, request);
+        return LancamentoResponse.from(repository.save(lancamento));
     }
 
     @Transactional
     public void excluir(Long id) {
         if (!repository.existsById(id)) {
-            throw new RuntimeException("Lançamento não encontrado");
+            throw new IllegalArgumentException("Lançamento não encontrado");
         }
 
         repository.deleteById(id);
+    }
+
+    private void atualizarDados(Lancamento lancamento, LancamentoRequest request) {
+        lancamento.setTipo(request.tipo());
+        lancamento.setDescricao(request.descricao().trim());
+        lancamento.setCategoria(request.categoria());
+        lancamento.setValor(request.valor());
+        lancamento.setData(request.data());
     }
 }

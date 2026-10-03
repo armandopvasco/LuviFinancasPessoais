@@ -15,7 +15,8 @@ public record LancamentoResponse(
         BigDecimal valor,
         LocalDate data
 ) {
-    public static LancamentoResponse fromEntity(Lancamento lancamento) {
+
+    public static LancamentoResponse from(Lancamento lancamento) {
         return new LancamentoResponse(
                 lancamento.getId(),
                 lancamento.getTipo(),

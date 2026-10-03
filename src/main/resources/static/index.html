@@ -4,107 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luvi Finanças Pessoais</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<header>
+<header class="topbar">
     <div>
         <h1>Luvi Finanças</h1>
-        <p>Controle financeiro pessoal</p>
+        <span>Controle financeiro da família</span>
     </div>
+    <form method="post" action="/logout">
+        <button class="logout-button" type="submit">Sair</button>
+    </form>
 </header>
 
-<main>
-    <section class="filtros">
-        <button id="mesAnterior">←</button>
+<main class="container">
+    <section class="month-navigation">
+        <button id="mesAnterior" class="secondary-button">‹</button>
         <h2 id="mesAtual"></h2>
-        <button id="mesProximo">→</button>
+        <button id="mesProximo" class="secondary-button">›</button>
     </section>
 
-    <section class="resumo">
-        <div class="card receita">
+    <section class="summary-grid">
+        <div class="summary-card receita">
             <span>Receitas</span>
             <strong id="totalReceitas">R$ 0,00</strong>
         </div>
-        <div class="card despesa">
+        <div class="summary-card despesa">
             <span>Despesas</span>
             <strong id="totalDespesas">R$ 0,00</strong>
         </div>
-        <div class="card saldo">
+        <div class="summary-card saldo">
             <span>Saldo</span>
             <strong id="saldo">R$ 0,00</strong>
         </div>
     </section>
 
-    <section class="acoes">
-        <button id="novoLancamento" class="btn-principal">+ Novo lançamento</button>
+    <section class="actions">
+        <button id="novoLancamento" class="primary-button">+ Novo lançamento</button>
     </section>
 
-    <section class="tabela-container">
-        <table>
-            <thead>
-            <tr>
-                <th>Data</th>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Tipo</th>
-                <th>Valor</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody id="tabelaLancamentos"></tbody>
-        </table>
-        <p id="semLancamentos" class="sem-lancamentos">Nenhum lançamento neste mês.</p>
+    <section class="table-card">
+        <div class="table-header">
+            <h2>Lançamentos</h2>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Ações</th>
+                </tr>
+                </thead>
+                <tbody id="lancamentosBody"></tbody>
+            </table>
+        </div>
+
+        <div id="semLancamentos" class="empty-state">
+            Nenhum lançamento neste mês.
+        </div>
     </section>
 </main>
 
-<div id="modal" class="modal escondido">
-    <div class="modal-conteudo">
-        <div class="modal-cabecalho">
-            <h2 id="tituloModal">Novo lançamento</h2>
-            <button id="fecharModal" class="fechar">×</button>
+<div id="modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitulo">Novo lançamento</h2>
+            <button id="fecharModal" class="close-button">&times;</button>
         </div>
 
-        <form id="formLancamento">
-            <input type="hidden" id="id">
+        <form id="lancamentoForm">
+            <input type="hidden" id="lancamentoId">
 
-            <label>Tipo</label>
+            <label for="tipo">Tipo</label>
             <select id="tipo" required>
                 <option value="DESPESA">Despesa</option>
                 <option value="RECEITA">Receita</option>
             </select>
 
-            <label>Descrição</label>
-            <input type="text" id="descricao" maxlength="200" required>
+            <label for="descricao">Descrição</label>
+            <input id="descricao" maxlength="200" required>
 
-            <label>Categoria</label>
-            <select id="categoria" required>
-                <option value="ALIMENTACAO">Alimentação</option>
-                <option value="MORADIA">Moradia</option>
-                <option value="TRANSPORTE">Transporte</option>
-                <option value="SAUDE">Saúde</option>
-                <option value="EDUCACAO">Educação</option>
-                <option value="LAZER">Lazer</option>
-                <option value="CONTAS">Contas</option>
-                <option value="SALARIO">Salário</option>
-                <option value="RENDA_EXTRA">Renda extra</option>
-                <option value="OUTROS">Outros</option>
-            </select>
+            <label for="categoria">Categoria</label>
+            <select id="categoria" required></select>
 
-            <label>Valor</label>
-            <input type="number" id="valor" step="0.01" min="0.01" required>
+            <label for="valor">Valor</label>
+            <input id="valor" type="number" min="0.01" step="0.01" required>
 
-            <label>Data</label>
-            <input type="date" id="data" required>
+            <label for="data">Data</label>
+            <input id="data" type="date" required>
 
-            <div class="form-acoes">
-                <button type="button" id="cancelar" class="btn-secundario">Cancelar</button>
-                <button type="submit" class="btn-principal">Salvar</button>
+            <div id="formError" class="form-error"></div>
+
+            <div class="modal-actions">
+                <button type="button" id="cancelarModal" class="secondary-button">Cancelar</button>
+                <button type="submit" class="primary-button">Salvar</button>
             </div>
         </form>
     </div>
 </div>
 
-<script src="script.js"></script>
+<script src="/js/script.js"></script>
 </body>
 </html>
