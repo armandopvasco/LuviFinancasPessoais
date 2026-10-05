@@ -346,3 +346,120 @@ th.sortable:hover { background:#f3f4f6; }
     .overlay{top:68px;}
     .menu-button{width:42px;height:42px;margin-right:10px;}
 }
+
+/* v5.3 - identidade LUVI no cabeçalho */
+.topbar-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.topbar-logo{width:48px;height:48px;display:block;flex:0 0 48px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.topbar-brand-text{display:flex;flex-direction:column;min-width:0}
+.topbar-brand-name{display:flex;align-items:baseline;gap:9px;line-height:1;white-space:nowrap}
+.topbar-brand-name strong{font-size:23px;letter-spacing:.7px;color:#e5b957}
+.topbar-brand-product{font-size:13px;letter-spacing:3px;color:#f3f4f6;font-weight:600}
+.topbar-brand-text>#contextoTitulo{margin-top:6px;color:#d1d5db;font-size:13px}
+@media(max-width:700px){
+ .topbar-brand{gap:8px}
+ .topbar-logo{width:42px;height:42px;flex-basis:42px}
+ .topbar-brand-name strong{font-size:20px}
+ .topbar-brand-product{font-size:11px;letter-spacing:2px}
+ .topbar-brand-text>#contextoTitulo{margin-top:4px;font-size:12px}
+}
+@media(max-width:430px){
+ .topbar-brand-product{display:none}
+ .topbar-logo{width:38px;height:38px;flex-basis:38px}
+ .topbar-brand-name strong{font-size:19px}
+ #usuarioNome{font-size:13px}
+}
+
+
+/* v5.4 - cabeçalho horizontal LUVI */
+.topbar-brand{display:flex;align-items:center;gap:14px;min-width:0}
+.topbar-logo{width:52px;height:52px;display:block;flex:0 0 52px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.18))}
+.topbar-brand-gold-divider{width:2px;height:50px;flex:0 0 2px;border-radius:999px;background:linear-gradient(180deg,#f4d27a,#b77a1f,#e5b957);box-shadow:0 0 6px rgba(229,185,87,.18)}
+.topbar-brand-name{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;line-height:1;white-space:nowrap}
+.topbar-brand-name strong{font-size:25px;letter-spacing:1px;color:#e5b957}
+.topbar-brand-product{font-size:12px;letter-spacing:4px;color:#f3f4f6;font-weight:500}
+.topbar-context-divider{width:1px;height:38px;flex:0 0 1px;background:rgba(209,213,219,.5);margin-left:6px}
+.topbar-brand>#contextoTitulo{color:#f3f4f6;font-size:17px;font-weight:600;white-space:nowrap}
+@media(max-width:700px){
+ .topbar-brand{gap:9px}
+ .topbar-logo{width:43px;height:43px;flex-basis:43px}
+ .topbar-brand-gold-divider{height:42px}
+ .topbar-brand-name strong{font-size:20px}
+ .topbar-brand-product{font-size:9px;letter-spacing:2.5px}
+ .topbar-context-divider{height:31px;margin-left:1px}
+ .topbar-brand>#contextoTitulo{font-size:13px;max-width:105px;overflow:hidden;text-overflow:ellipsis}
+}
+@media(max-width:520px){
+ .topbar-brand-gold-divider{display:none}
+ .topbar-context-divider{display:none}
+ .topbar-brand{gap:7px}
+ .topbar-brand-product{display:none}
+ .topbar-logo{width:38px;height:38px;flex-basis:38px}
+ .topbar-brand-name strong{font-size:18px}
+ .topbar-brand>#contextoTitulo{font-size:12px;max-width:85px}
+}
+@media(max-width:390px){
+ .topbar-brand-name{display:none}
+ .topbar-brand>#contextoTitulo{max-width:80px}
+}
+
+/* v5.5 - subtelas responsivas: cabeçalho/rodapé fixos e conteúdo rolável */
+.modal{z-index:100;padding:16px;box-sizing:border-box}
+.modal-viewport{
+    padding:0;
+    max-height:calc(100dvh - 32px);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
+.modal-viewport>.modal-header{
+    flex:0 0 auto;
+    margin:0;
+    padding:18px 22px 14px;
+    border-bottom:1px solid #e5e7eb;
+    background:#fff;
+}
+.modal-viewport>.modal-body{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    padding:16px 22px;
+}
+.modal-viewport>.modal-actions{
+    flex:0 0 auto;
+    margin:0;
+    padding:14px 22px 18px;
+    border-top:1px solid #e5e7eb;
+    background:#fff;
+}
+.dashboard-modal.modal-viewport{width:min(1100px,100%)}
+@media(max-width:700px){
+    .modal{padding:8px;align-items:center}
+    .modal-viewport{max-height:calc(100dvh - 16px);border-radius:12px}
+    .modal-viewport>.modal-header{padding:14px 16px 11px}
+    .modal-viewport>.modal-body{padding:12px 16px}
+    .modal-viewport>.modal-actions{padding:11px 16px 14px}
+}
+
+/* v5.6 - subtelas respeitam o cabeçalho principal LUVI */
+.modal{
+    inset:auto 0 0 0;
+    top:72px;
+    height:calc(100dvh - 72px);
+    z-index:44;
+    padding:16px;
+    box-sizing:border-box;
+}
+.modal-viewport{
+    max-height:calc(100dvh - 72px - 32px);
+}
+@media(max-width:700px){
+    .modal{
+        top:68px;
+        height:calc(100dvh - 68px);
+        padding:8px;
+    }
+    .modal-viewport{
+        max-height:calc(100dvh - 68px - 16px);
+    }
+}

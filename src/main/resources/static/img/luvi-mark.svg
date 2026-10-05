@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="LUVI">
+ <defs>
+  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4d27a"/><stop offset=".48" stop-color="#c9922e"/><stop offset="1" stop-color="#f0c765"/></linearGradient>
+  <linearGradient id="v" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#355b3f"/><stop offset="1" stop-color="#b7bd7a"/></linearGradient>
+ </defs>
+ <path d="M19 15a7 7 0 0 1 7 7v49h50a7 7 0 0 1 0 14H23c-8 0-14-6-14-14V22a7 7 0 0 1 10-7z" fill="url(#g)"/>
+ <path d="M31 62V49a5 5 0 0 1 5-5h7v18H31zm18 0V37a5 5 0 0 1 5-5h7v30H49zm18 0V25a5 5 0 0 1 5-5h7v42H67z" fill="url(#v)"/>
+ <path d="M73 19c-7-1-12-6-13-13 7 0 12 4 14 10 2-7 7-11 14-11 0 7-5 13-13 15l-1 8h-2z" fill="url(#v)"/>
+</svg>
