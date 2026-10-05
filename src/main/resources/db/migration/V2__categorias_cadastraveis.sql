@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS categorias (id BIGSERIAL PRIMARY KEY,nome VARCHAR(80) NOT NULL,tipo VARCHAR(20) NOT NULL,ativa BOOLEAN NOT NULL DEFAULT TRUE,grupo_id BIGINT REFERENCES grupos(id),usuario_id BIGINT REFERENCES usuarios(id),CONSTRAINT ck_categoria_escopo CHECK ((grupo_id IS NOT NULL AND usuario_id IS NULL) OR (grupo_id IS NULL AND usuario_id IS NOT NULL)));
+ALTER TABLE lancamentos ADD COLUMN IF NOT EXISTS categoria_id BIGINT;
+-- Cria a estrutura padrão da Família/grupos existentes. Cada grupo recebe sua própria lista comum.
+INSERT INTO categorias(nome,tipo,grupo_id) SELECT v.nome,v.tipo,g.id FROM grupos g CROSS JOIN (VALUES ('Salário','RECEITA'),('Renda extra','RECEITA'),('Alimentação','DESPESA'),('Moradia','DESPESA'),('Transporte','DESPESA'),('Saúde','DESPESA'),('Educação','DESPESA'),('Lazer','DESPESA'),('Contas','DESPESA'),('Outros','DESPESA')) v(nome,tipo) WHERE NOT EXISTS (SELECT 1 FROM categorias c WHERE c.grupo_id=g.id);
+-- Para lançamentos antigos, usa a categoria do primeiro grupo ao qual a conta está compartilhada.
+UPDATE lancamentos l SET categoria_id=(SELECT c.id FROM conta_grupos cg JOIN categorias c ON c.grupo_id=cg.grupo_id WHERE cg.conta_id=l.conta_id AND upper(replace(replace(c.nome,' ', '_'),'Á','A'))=CASE l.categoria WHEN 'SALARIO' THEN 'SALARIO' WHEN 'RENDA_EXTRA' THEN 'RENDA_EXTRA' WHEN 'ALIMENTACAO' THEN 'ALIMENTACAO' WHEN 'MORADIA' THEN 'MORADIA' WHEN 'TRANSPORTE' THEN 'TRANSPORTE' WHEN 'SAUDE' THEN 'SAUDE' WHEN 'EDUCACAO' THEN 'EDUCACAO' WHEN 'LAZER' THEN 'LAZER' WHEN 'CONTAS' THEN 'CONTAS' ELSE 'OUTROS' END ORDER BY cg.grupo_id LIMIT 1) WHERE categoria_id IS NULL;
+-- Fallback pessoal para contas privadas ou sem grupo.
+INSERT INTO categorias(nome,tipo,usuario_id) SELECT v.nome,v.tipo,u.id FROM usuarios u CROSS JOIN (VALUES ('Salário','RECEITA'),('Renda extra','RECEITA'),('Alimentação','DESPESA'),('Moradia','DESPESA'),('Transporte','DESPESA'),('Saúde','DESPESA'),('Educação','DESPESA'),('Lazer','DESPESA'),('Contas','DESPESA'),('Outros','DESPESA')) v(nome,tipo) WHERE NOT EXISTS (SELECT 1 FROM categorias c WHERE c.usuario_id=u.id);
+UPDATE lancamentos l SET categoria_id=(SELECT c.id FROM categorias c WHERE c.usuario_id=l.usuario_criacao_id AND c.nome=CASE l.categoria WHEN 'SALARIO' THEN 'Salário' WHEN 'RENDA_EXTRA' THEN 'Renda extra' WHEN 'ALIMENTACAO' THEN 'Alimentação' WHEN 'MORADIA' THEN 'Moradia' WHEN 'TRANSPORTE' THEN 'Transporte' WHEN 'SAUDE' THEN 'Saúde' WHEN 'EDUCACAO' THEN 'Educação' WHEN 'LAZER' THEN 'Lazer' WHEN 'CONTAS' THEN 'Contas' ELSE 'Outros' END LIMIT 1) WHERE categoria_id IS NULL;
+ALTER TABLE lancamentos ALTER COLUMN categoria_id SET NOT NULL;
+ALTER TABLE lancamentos ADD CONSTRAINT fk_lancamentos_categoria FOREIGN KEY (categoria_id) REFERENCES categorias(id);
+ALTER TABLE lancamentos ALTER COLUMN categoria DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_lancamentos_categoria ON lancamentos(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_categorias_grupo ON categorias(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_categorias_usuario ON categorias(usuario_id);
