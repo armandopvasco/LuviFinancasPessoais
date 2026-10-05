@@ -1,13 +1,1 @@
-package br.com.luvi.financaspessoais.config;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-
-@Controller
-public class LoginController {
-    @GetMapping("/login")
-    public String login() { return "login"; }
-
-    @GetMapping("/")
-    public String index() { return "index"; }
-}
+package br.com.luvi.financaspessoais.config; import br.com.luvi.financaspessoais.usuario.service.UsuarioService; import org.springframework.stereotype.Controller; import org.springframework.ui.Model; import org.springframework.web.bind.annotation.*; @Controller public class LoginController{private final UsuarioService usuarios;public LoginController(UsuarioService u){usuarios=u;}@GetMapping("/login")String login(){return"login";}@GetMapping("/")String index(){return"index";}@GetMapping("/cadastro")String cadastro(){return"cadastro";}@PostMapping("/cadastro")String cadastrar(@RequestParam String nome,@RequestParam String email,@RequestParam String senha,@RequestParam String confirmarSenha,Model model){try{if(!senha.equals(confirmarSenha))throw new IllegalArgumentException("As senhas não conferem.");usuarios.cadastrar(nome,email,senha);return"redirect:/login?cadastro";}catch(Exception e){model.addAttribute("erro",e.getMessage());model.addAttribute("nome",nome);model.addAttribute("email",email);return"cadastro";}}}

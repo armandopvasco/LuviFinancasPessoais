@@ -1,0 +1,1 @@
+package br.com.luvi.financaspessoais.grupo.repository; import br.com.luvi.financaspessoais.grupo.entity.ConviteGrupo; import org.springframework.data.jpa.repository.JpaRepository; import java.util.Optional; public interface ConviteGrupoRepository extends JpaRepository<ConviteGrupo,Long>{Optional<ConviteGrupo> findByToken(String token);}

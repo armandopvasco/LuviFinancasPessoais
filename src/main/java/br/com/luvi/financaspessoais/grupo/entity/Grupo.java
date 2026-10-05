@@ -1,0 +1,3 @@
+package br.com.luvi.financaspessoais.grupo.entity;
+import br.com.luvi.financaspessoais.usuario.entity.Usuario; import jakarta.persistence.*; import java.time.LocalDateTime;
+@Entity @Table(name="grupos") public class Grupo { @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id; @Column(nullable=false,length=120) private String nome; @ManyToOne(optional=false) private Usuario criadoPor; @Column(nullable=false) private LocalDateTime dataCriacao; @PrePersist void pre(){if(dataCriacao==null)dataCriacao=LocalDateTime.now();} public Long getId(){return id;} public String getNome(){return nome;} public void setNome(String v){nome=v;} public Usuario getCriadoPor(){return criadoPor;} public void setCriadoPor(Usuario v){criadoPor=v;} }

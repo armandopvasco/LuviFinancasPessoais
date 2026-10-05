@@ -1,0 +1,3 @@
+package br.com.luvi.financaspessoais.conta.entity;
+import br.com.luvi.financaspessoais.grupo.entity.Grupo; import jakarta.persistence.*;
+@Entity @Table(name="conta_grupos",uniqueConstraints=@UniqueConstraint(name="uk_conta_grupo",columnNames={"conta_id","grupo_id"})) public class ContaGrupo { @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id; @ManyToOne(optional=false) @JoinColumn(name="conta_id") private ContaFinanceira conta; @ManyToOne(optional=false) @JoinColumn(name="grupo_id") private Grupo grupo; public Long getId(){return id;} public ContaFinanceira getConta(){return conta;} public void setConta(ContaFinanceira v){conta=v;} public Grupo getGrupo(){return grupo;} public void setGrupo(Grupo v){grupo=v;} }
