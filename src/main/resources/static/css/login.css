@@ -105,3 +105,8 @@ button:hover {
     font-size: 13px;
     margin: 20px 0 0;
 }
+
+.luvi-login-mark{display:block;width:64px;height:64px;margin:0 auto 14px;object-fit:contain}
+.google-button{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:#1f2937;font-size:15px;font-weight:600;text-decoration:none}
+.google-button:hover{background:#f9fafb;border-color:#9ca3af}.google-g{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid #d1d5db;font-weight:700}
+.separator{display:flex;align-items:center;gap:12px;margin:22px 0 4px;color:#9ca3af;font-size:13px}.separator:before,.separator:after{content:"";flex:1;height:1px;background:#e5e7eb}
