@@ -32,4 +32,5 @@ public class AppController {
     @PostMapping("/contas/{cid}/grupos/{gid}") public void compartilhar(@PathVariable Long cid,@PathVariable Long gid,Authentication a){cs.compartilhar(cid,gid,us.atual(a.getName()));}
     @DeleteMapping("/contas/{cid}/grupos/{gid}") public void descompartilhar(@PathVariable Long cid,@PathVariable Long gid,Authentication a){cs.descompartilhar(cid,gid,us.atual(a.getName()));}
     @GetMapping("/grupos/{gid}/membros") public List<Map<String,Object>> membros(@PathVariable Long gid,Authentication a){return gs.membros(gid,us.atual(a.getName())).stream().map(m->Map.<String,Object>of("id",m.getUsuario().getId(),"nome",m.getUsuario().getNome(),"perfil",m.getPerfil().name())).toList();}
+    @DeleteMapping("/grupos/{gid}/membros/{uid}") public void removerMembro(@PathVariable Long gid,@PathVariable Long uid,Authentication a){gs.removerMembro(gid,uid,us.atual(a.getName()));}
 }

@@ -57,7 +57,18 @@ public class ContaService {
     @Transactional public void compartilhar(Long cid,Long gid,Usuario u){
         if(!ehProprietario(cid,u)) throw new SecurityException("Somente o proprietário pode compartilhar a conta.");
         var m=membros.findByGrupoIdAndUsuarioId(gid,u.getId()).orElseThrow(()->new SecurityException("Você precisa ser membro do grupo para compartilhar sua conta."));
+        var atuais=vinculos.findByContaId(cid);
+        if(atuais.stream().anyMatch(v->!v.getGrupo().getId().equals(gid))) throw new IllegalStateException("Uma conta pode ser compartilhada com apenas um grupo. Remova o compartilhamento atual antes de escolher outro grupo.");
         if(!vinculos.existsByContaIdAndGrupoId(cid,gid)){ ContaGrupo x=new ContaGrupo(); x.setConta(contas.findById(cid).orElseThrow()); x.setGrupo(m.getGrupo()); vinculos.save(x); }
+    }
+    public Long grupoCategorias(Long cid,Usuario u){
+        if(!podeAcessar(cid,u)) throw new SecurityException("Conta não permitida.");
+        var gs=vinculos.findByContaId(cid);
+        if(gs.isEmpty()) return null;
+        if(gs.size()>1) throw new IllegalStateException("Esta conta está compartilhada com mais de um grupo. Ajuste o compartilhamento para definir corretamente as categorias.");
+        Long gid=gs.get(0).getGrupo().getId();
+        if(!membros.existsByGrupoIdAndUsuarioId(gid,u.getId())) throw new SecurityException("Acesso negado ao grupo da conta.");
+        return gid;
     }
     @Transactional public void descompartilhar(Long cid,Long gid,Usuario u){
         if(!ehProprietario(cid,u)) throw new SecurityException("Somente o proprietário pode remover o compartilhamento.");
