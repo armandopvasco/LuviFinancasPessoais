@@ -1138,3 +1138,44 @@ table,tbody{display:block;width:100%}thead{display:none}#lancamentosBody tr{disp
 
 /* v6.0.6: dois atalhos superiores */
 @media(max-width:700px){.mobile-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));max-width:270px;gap:24px}}
+
+/* v6.0.8: a lista de grupos deve ser compacta também no desktop.
+   O SVG do chevron não pode herdar dimensões de outros ícones. */
+#groupsContent .luvi-mobile-list-item{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  width:100%;
+  min-height:68px;
+  padding:14px 16px;
+  text-align:left;
+}
+#groupsContent .luvi-list-main{
+  display:flex;
+  flex:1 1 auto;
+  min-width:0;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:3px;
+  margin:0;
+  padding:0;
+}
+#groupsContent .luvi-list-main strong{font-size:15px;line-height:1.35;color:#1f2937}
+#groupsContent .luvi-list-main small{font-size:12px;line-height:1.35;margin:0;color:#64748b}
+#groupsContent svg.luvi-list-chevron{
+  display:block;
+  width:20px!important;
+  height:20px!important;
+  min-width:20px;
+  max-width:20px;
+  min-height:20px;
+  max-height:20px;
+  flex:0 0 20px;
+  fill:none!important;
+  stroke:#64748b!important;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
