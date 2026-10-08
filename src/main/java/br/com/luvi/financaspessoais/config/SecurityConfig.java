@@ -21,7 +21,7 @@ public class SecurityConfig {
     SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(a -> a
                     .requestMatchers("/login", "/cadastro", "/css/**", "/js/**",
-                            "/images/**", "/img/**", "/favicon.ico").permitAll()
+                            "/images/**", "/img/**", "/icons/**", "/manifest.webmanifest", "/sw.js", "/favicon.ico").permitAll()
                     .anyRequest().authenticated())
             .formLogin(f -> f
                     .loginPage("/login")
@@ -42,7 +42,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(a -> a
                     .requestMatchers("/login", "/cadastro",
                             "/oauth2/**", "/login/oauth2/**",
-                            "/css/**", "/js/**", "/images/**", "/img/**", "/favicon.ico").permitAll()
+                            "/css/**", "/js/**", "/images/**", "/img/**", "/icons/**", "/manifest.webmanifest", "/sw.js", "/favicon.ico").permitAll()
                     .anyRequest().authenticated())
             .formLogin(f -> f
                     .loginPage("/login")

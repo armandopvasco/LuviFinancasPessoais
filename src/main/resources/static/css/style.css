@@ -1179,3 +1179,6 @@ table,tbody{display:block;width:100%}thead{display:none}#lancamentosBody tr{disp
   stroke-linecap:round;
   stroke-linejoin:round;
 }
+
+/* PWA v6.1.1: menu do usuário acessível acima do conteúdo no celular */
+@media(max-width:700px){.topbar{z-index:950!important}.user-menu-wrap{z-index:960!important}.user-dropdown:not(.hidden){z-index:970!important;pointer-events:auto!important}.user-dropdown .logout-option{min-height:44px;pointer-events:auto!important}}
