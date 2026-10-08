@@ -1,4 +1,4 @@
-// LUVI Finanças v5.11.1 - correções de interação
+// LUVI Finanças v6.0.2 - correções mobile
 let dataAtual=new Date(),lancamentos=[],transferencias=[],contas=[],grupos=[],categorias=[],categoriasGerencia=[],graficos=[],contaSelecionada=null,grupoSelecionado=null,ordenacao={campo:"data",direcao:"desc"},grupoGerenciado=null,conviteAtual=null,retornarAoGrupoAposConvite=false,contaCompartilhamento=null;
 const nomesMeses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const $=id=>document.getElementById(id), form=$("lancamentoForm");
@@ -40,15 +40,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   document.addEventListener("keydown",e=>{
     if(e.key==="Escape"){
       e.preventDefault();
-      luviHistoryNavigation=true;
-      try{fecharTopo()}finally{luviHistoryNavigation=false}
-      history.replaceState({luvi:true,camadas:estadoCamadas()},"",location.href);
-    }
-  });
-  history.replaceState({luvi:true,camadas:estadoCamadas()},"",location.href);
-  window.addEventListener("popstate",e=>{
-    if(e.state?.luvi){
-      restaurarEstadoCamadas(e.state.camadas||[]);
+      fecharTopo();
     }
   });
   document.addEventListener("click",async e=>{
@@ -60,10 +52,19 @@ document.addEventListener("DOMContentLoaded",async()=>{
     else await fecharConviteGerado();
   });
 
+  // Navegação de grupos deve funcionar independentemente das chamadas iniciais.
+  $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal");
+  $("novoGrupoButton").onclick=criarGrupo;
   await carregarContexto(); await carregarCategorias(); await carregarDadosMes();
   $("mesAnterior").onclick=async()=>{dataAtual.setMonth(dataAtual.getMonth()-1);await carregarDadosMes()};
   $("mesProximo").onclick=async()=>{dataAtual.setMonth(dataAtual.getMonth()+1);await carregarDadosMes()};
   $("novoLancamento").onclick=abrirNovo; $("novaTransferencia").onclick=abrirTransferencia;
+  $("mobileNew").onclick=abrirNovo; $("mobileTransfer").onclick=abrirTransferencia;
+  $("mobileNavDashboard").onclick=()=>{abrirDashboard();marcarNavMobile("dashboard")};
+  $("mobileNavHome").onclick=()=>{fecharSubtelasPrincipais();window.scrollTo({top:0,behavior:"smooth"});marcarNavMobile("home")};
+
+  $("mobileNavMore").onclick=()=>{toggleMenu(true);marcarNavMobile("more")};
+
   $("fecharModal").onclick=$("cancelarModal").onclick=()=>fecharCamada("modal");
   $("fecharTransfer").onclick=$("cancelarTransfer").onclick=()=>fecharCamada("transferModal");
   form.onsubmit=salvarLancamento; $("tipo").onchange=atualizarSelectCategorias; $("conta").onchange=carregarCategorias; $("transferForm").onsubmit=salvarTransferencia;
@@ -84,11 +85,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("novaContaButton").onclick=()=>abrirEdicaoConta(); $("accountForm").onsubmit=salvarConta;
   $("fecharAccountEdit").onclick=$("cancelarAccountEdit").onclick=()=>{fecharCamada("accountEditModal",false);abrirContas()};
   $("copyInviteButton").onclick=()=>copiarConvite(false);
-  $("fecharMessage").onclick=$("messageOk").onclick=()=>resolverMensagem(true); $("messageCancel").onclick=()=>resolverMensagem(false);
-  window.luviLayerOrder=0;
+  $("fecharMessage").onclick=$("messageCancel").onclick=()=>resolverMensagem(false); $("messageOk").onclick=()=>resolverMensagem(true);
+  window.luviLayerOrder=window.luviLayerOrder||0;
 });
 
-async function carregarContexto(){const r=await fetch("/api/app/contexto");if(!r.ok)return;const c=await r.json();contas=c.contas;grupos=c.grupos;window.usuarioAtual=c.usuario;$("usuarioNome").textContent=c.usuario.nome;$("usuarioAvatar").textContent=(c.usuario.nome||"U").trim().charAt(0).toUpperCase();const opts=contas.map(x=>`<option value="${x.id}">${escaparHtml(x.nome)}</option>`).join("");$("conta").innerHTML=opts;$("transferOrigem").innerHTML=opts;$("transferDestino").innerHTML=opts}
+function marcarNavMobile(alvo){const mapa={home:"mobileNavHome",dashboard:"mobileNavDashboard",more:"mobileNavMore"};Object.values(mapa).forEach(id=>$(id)?.classList.remove("active"));$(mapa[alvo])?.classList.add("active")}
+async function carregarContexto(){const r=await fetch("/api/app/contexto");if(!r.ok)return;const c=await r.json();contas=c.contas;grupos=c.grupos;window.usuarioAtual=c.usuario;$("usuarioNome").textContent=c.usuario.nome;$("usuarioAvatar").textContent=(c.usuario.nome||"U").trim().charAt(0).toUpperCase();if($("mobileGreeting"))$("mobileGreeting").textContent=`Olá, ${(c.usuario.nome||"").trim().split(/\\s+/)[0]||""}!`;const opts=contas.map(x=>`<option value="${x.id}">${escaparHtml(x.nome)}</option>`).join("");$("conta").innerHTML=opts;$("transferOrigem").innerHTML=opts;$("transferDestino").innerHTML=opts}
 
 function abrirContas(){fecharSubtelasPrincipais("accountsModal");toggleMenu(false);renderContas();abrirCamada("accountsModal")}
 function renderContas(){
@@ -102,7 +104,28 @@ function abrirEdicaoConta(id=null){fecharCamada("accountsModal",false);const c=i
 async function salvarConta(e){e.preventDefault();const id=$("accountId").value,d={nome:$("accountName").value.trim(),tipo:$("accountType").value};const r=await fetch(id?`/api/app/contas/${id}`:"/api/app/contas",{method:id?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok){$("accountError").textContent=await erro(r);return}fecharCamada("accountEditModal",false);await carregarContexto();abrirContas();toast(id?"Conta alterada com sucesso.":"Conta criada. Por padrão, ela é privada.")}
 async function excluirConta(id){const c=contas.find(x=>x.id===id);if(!await confirmar(`Deseja excluir a conta “${c?.nome||''}”?\n\nA exclusão só será permitida se ela não possuir movimentações.`))return;const r=await fetch(`/api/app/contas/${id}`,{method:"DELETE"});if(!r.ok){mensagem(await erro(r),"Não foi possível excluir");return}if(contaSelecionada===id)selecionarVisaoGeral();await carregarContexto();renderContas();toast("Conta excluída.")}
 
-async function criarGrupo(){fecharSubtelasPrincipais();toggleMenu(false);const nome=await solicitarTexto("Novo grupo","Nome do grupo","Ex.: Família");if(!nome)return;const r=await fetch("/api/app/grupos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nome})});if(r.ok){await carregarContexto();renderGrupos();toast("Grupo criado.")}else mensagem(await erro(r),"Não foi possível criar o grupo")}
+async function criarGrupo(){
+  toggleMenu(false);
+  // Diálogo nativo isolado da pilha de modais do LUVI: evita travamentos
+  // de foco/camadas e permite Cancelar/Voltar do navegador.
+  const resposta=window.prompt("Nome do novo grupo:", "");
+  if(resposta===null)return;
+  const nome=resposta.trim();
+  if(!nome){mensagem("Informe um nome para o grupo.");return}
+  try{
+    const r=await fetch("/api/app/grupos",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({nome})
+    });
+    if(!r.ok){mensagem(await erro(r),"Não foi possível criar o grupo");return}
+    await carregarContexto();
+    renderGrupos();
+    toast("Grupo criado.");
+  }catch(e){
+    console.error("Erro ao criar grupo",e);
+    mensagem("Não foi possível criar o grupo. Tente novamente.");
+  }
+}
 async function gerarConvite(id){const veioDeMembros=$("membersModal")&&!$("membersModal").classList.contains("hidden");if(veioDeMembros){retornarAoGrupoAposConvite=true;fecharCamada("membersModal",false)}const r=await fetch(`/api/grupos/${id}/convites`,{method:"POST"});if(!r.ok){mensagem(await erro(r),"Não foi possível gerar o convite");return}const x=await r.json(),g=grupos.find(v=>v.id===id);conviteAtual={codigo:x.codigo,grupo:g?.nome||"seu grupo"};$("inviteGeneratedCode").textContent=x.codigo;$("inviteHelp").textContent=`Envie a mensagem abaixo para a pessoa que deseja adicionar ao grupo ${conviteAtual.grupo}. O código é válido por 7 dias e para um único uso.`;$("inviteShareText").value=textoConvite();$("inviteFeedback").textContent="";$("shareInviteButton").style.display="";abrirCamada("inviteGeneratedModal");await copiarConvite(true)}
 async function fecharConviteGerado(){const voltarMembros=retornarAoGrupoAposConvite,grupoId=grupoGerenciado;retornarAoGrupoAposConvite=false;fecharCamada("inviteGeneratedModal",false);if(voltarMembros&&grupoId)await abrirMembros()}
 function textoConvite(){return`Você foi convidado para participar do grupo ${conviteAtual.grupo} no LUVI Finanças. Entre no LUVI Finanças, escolha “Entrar com convite” e informe o código ${conviteAtual.codigo}.`}
@@ -145,7 +168,7 @@ function selecionarGrupo(id,nome){fecharSubtelasPrincipais();grupoSelecionado=id
 function toggleMenu(force){const s=$("sidebar"),open=force===undefined?!s.classList.contains("open"):force;s.classList.toggle("open",open);$("overlay").classList.toggle("hidden",!open);if(open)registrarCamada()}
 function abrirVisao(){fecharSubtelasPrincipais("viewModal");toggleMenu(false);$("viewContent").innerHTML=`<button class="selection-item" onclick="selecionarVisaoGeral();fecharCamada('viewModal',false)"><strong>Visão geral</strong><span>Todas as contas que você pode visualizar</span></button>`+contas.map(c=>`<button class="selection-item" onclick="selecionarConta(${c.id},'${js(c.nome)}');fecharCamada('viewModal',false)"><strong>${escaparHtml(c.nome)}</strong><span>${c.propria?(c.grupos.length?'Compartilhada':'Privada'):'Compartilhada comigo'}</span></button>`).join("");abrirCamada("viewModal")}
 function abrirGrupos(){fecharSubtelasPrincipais("groupsModal");toggleMenu(false);renderGrupos();abrirCamada("groupsModal")}
-function renderGrupos(){$("groupsContent").innerHTML=grupos.length?grupos.map(g=>`<button type="button" class="selection-item" data-open-group="${g.id}"><strong>${escaparHtml(g.nome)}</strong><span>${g.perfil==='ADMIN'?'Administrador':'Membro'}</span></button>`).join(""):'<div class="empty-state">Você ainda não participa de grupos.</div>'}
+function renderGrupos(){$("groupsContent").innerHTML=grupos.length?grupos.map(g=>`<button type="button" class="selection-item luvi-mobile-list-item" data-open-group="${g.id}"><span class="luvi-list-main"><strong>${escaparHtml(g.nome)}</strong><small>${g.perfil==='ADMIN'?'Administrador':'Membro'}</small></span><svg class="luvi-list-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`).join(""):'<div class="empty-state">Você ainda não participa de grupos.</div>'}
 async function alterarCompartilhamento(cid,gid,marcar,el){el.disabled=true;const r=await fetch(`/api/app/contas/${cid}/grupos/${gid}`,{method:marcar?"POST":"DELETE"});if(!r.ok){el.checked=!marcar;await mensagem(await erro(r),"Não foi possível alterar o compartilhamento")}else await carregarContexto();el.disabled=false}
 function abrirEntradaConvite(){fecharSubtelasPrincipais();toggleMenu(false);$("inviteCodeInput").value="";$("inviteError").textContent="";abrirCamada("inviteCodeModal");setTimeout(()=>$("inviteCodeInput").focus(),30)}
 async function abrirGrupo(id,e){if(e)e.stopPropagation();fecharSubtelasPrincipais("groupModal");toggleMenu(false);grupoGerenciado=id;const g=grupos.find(x=>x.id===id);$("groupModalTitle").textContent=g?`Grupo: ${g.nome}`:"Grupo";const proprias=contas.filter(c=>c.propria),outras=contas.filter(c=>!c.propria&&c.grupos.includes(id));$("groupContent").innerHTML=`<section class="group-panel"><div class="group-panel-title"><h3>Contas no grupo</h3></div><div class="group-scroll"><div class="group-table group-accounts"><div class="group-table-head"><span>Conta</span><span>Compartilhamento</span></div>${proprias.map(c=>`<div class="group-table-row"><span><strong>${escaparHtml(c.nome)}</strong></span><span><input aria-label="Compartilhar ${escaparHtml(c.nome)}" type="checkbox" ${c.grupos.includes(id)?'checked':''} onchange="alterarCompartilhamentoGrupo(${c.id},${id},this.checked,this)"></span></div>`).join('')}${outras.map(c=>`<div class="group-table-row"><span><strong>${escaparHtml(c.nome)}</strong><small>de ${escaparHtml(c.proprietario)}</small></span><span><span class="shared-badge">Compartilhada comigo</span></span></div>`).join('')}${!proprias.length&&!outras.length?'<div class="empty-state">Nenhuma conta disponível.</div>':''}</div></div></section>`;$("groupMembersButton").style.display="";abrirCamada("groupModal")}
@@ -191,44 +214,22 @@ async function salvarTransferencia(e){e.preventDefault();const d={origemId:+$("t
 async function excluirLancamento(id){if(!await confirmar("Deseja realmente excluir este lançamento?"))return;const r=await fetch(`/api/lancamentos/${id}`,{method:"DELETE"});if(r.ok){await carregarDadosMes();toast("Lançamento excluído.")}else mensagem(await erro(r))}
 async function excluirTransferencia(id){if(!await confirmar("Deseja realmente excluir esta transferência?"))return;const r=await fetch(`/api/transferencias/${id}`,{method:"DELETE"});if(r.ok){await carregarDadosMes();toast("Transferência excluída.")}else mensagem(await erro(r))}
 
-let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){fecharCamada("messageModal",false);const r=messageResolver;messageResolver=null;if(r)r(v)}
+let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){const r=messageResolver;messageResolver=null;if(r)r(v);fecharCamada("messageModal",false)}
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
 function fecharSubtelasPrincipais(excecao=null){["categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
-let luviHistoryNavigation=false;
-function estadoCamadas(){return modais().map(el=>el.id)}
-function gravarEstadoAtual(replace=false){
-  if(luviHistoryNavigation)return;
-  const st={luvi:true,camadas:estadoCamadas()};
-  if(replace)history.replaceState(st,"",location.href);else history.pushState(st,"",location.href);
-}
-function restaurarEstadoCamadas(ids=[]){
-  luviHistoryNavigation=true;
-  try{
-    document.querySelectorAll(".modal-overlay").forEach(el=>{
-      el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";
-    });
-    ids.forEach(id=>{
-      const el=$(id);if(!el)return;
-      el.classList.remove("hidden");
-      const ordem=++window.luviLayerOrder;
-      el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);
-    });
-    sincronizarCamadas();
-  }finally{luviHistoryNavigation=false}
-}
-function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;if(el.classList.contains("hidden"))el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();gravarEstadoAtual(false);return true}
-function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();gravarEstadoAtual(true);return true}
+function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;if(el.classList.contains("hidden"))el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();return true}
+function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}
 function sincronizarCamadas(){const temModal=modais().length>0;document.body.classList.toggle("modal-open",temModal)}
 function fecharTopo(){const abertos=modais().sort((a,b)=>(+(b.dataset.openOrder||0))-(+(a.dataset.openOrder||0)));if(abertos.length){const id=abertos[0].id;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)abrirGrupo(grupoGerenciado);return true}if(id==="shareAccountModal"){fecharCamada(id);abrirContas();return true}if(id==="accountEditModal"){fecharCamada(id,false);abrirContas();return true}if(id==="categoryEditModal"){fecharCamada(id,false);abrirCategorias();return true}if(id==="inviteGeneratedModal"){fecharConviteGerado();return true}return fecharCamada(id);}if($("usuarioDropdown")&&!$("usuarioDropdown").classList.contains("hidden")){ $("usuarioDropdown").classList.add("hidden");$("usuarioMenuButton").setAttribute("aria-expanded","false");return true}if($("sidebar").classList.contains("open")){toggleMenu(false);return true}return false}
-function rotuloTipoConta(t){return({BANCO:"Banco",CARTEIRA:"👛 Carteira",OUTROS:"Outros"})[t]||t}
+function rotuloTipoConta(t){return({BANCO:"Banco",CARTEIRA:"Carteira",OUTROS:"Outros"})[t]||t}
 function formatarMoeda(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function formatarData(d){const[a,m,x]=d.split("-");return`${x}/${m}/${a}`}function formatarCategoria(c){return({SALARIO:"Salário",RENDA_EXTRA:"Renda extra",ALIMENTACAO:"Alimentação",MORADIA:"Moradia",TRANSPORTE:"Transporte",SAUDE:"Saúde",EDUCACAO:"Educação",LAZER:"Lazer",CONTAS:"Contas",OUTROS:"Outros",TRANSFERENCIA:"Transferência"})[c]||c}function hojeISO(){const h=new Date(),d=new Date(h.getTime()-h.getTimezoneOffset()*60000);return d.toISOString().slice(0,10)}function escaparHtml(t){const d=document.createElement("div");d.textContent=t||"";return d.innerHTML}function js(t){return String(t||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'")}async function erro(r){try{const x=await r.json();return x.message||x.detail||"Operação não permitida."}catch(_){return"Não foi possível concluir a operação no LUVI Finanças."}}
 
 
 async function abrirCategorias(){fecharSubtelasPrincipais("categoriesModal");toggleMenu(false);$("categoryScope").innerHTML=`<option value="">Pessoal</option>`+grupos.map(g=>`<option value="${g.id}">Grupo: ${escaparHtml(g.nome)}</option>`).join("");if(grupos.length){$("categoryScope").value=grupoSelecionado&&grupos.some(g=>String(g.id)===String(grupoSelecionado))?String(grupoSelecionado):String(grupos[0].id)}else{$("categoryScope").value=""}await carregarCategoriasGerencia();abrirCamada("categoriesModal")}
 async function carregarCategoriasGerencia(){const gid=$("categoryScope").value;const r=await fetch(`/api/categorias${gid?`?grupoId=${gid}`:""}`);if(!r.ok){mensagem(await erro(r));return}categoriasGerencia=await r.json();renderCategoriasGerencia()}
-function renderCategoriasGerencia(){$("categoriesContent").innerHTML=categoriasGerencia.length?`<div class="category-table"><div class="category-row category-head"><span>Nome</span><span>Tipo</span><span>Ativa</span><span>Ações</span></div>${categoriasGerencia.map(c=>`<div class="category-row"><span class="category-name"><strong>${escaparHtml(c.nome)}</strong></span><span class="category-type">${c.tipo==="RECEITA"?"Receita":"Despesa"}</span><span class="category-active"><label class="switch" title="${c.ativa?'Categoria ativa':'Categoria inativa'}"><input type="checkbox" ${c.ativa?'checked':''} onchange="alternarCategoria(${c.id},this)"><span class="switch-slider"></span><span class="sr-only">${c.ativa?'Ativa':'Inativa'}</span></label></span><span class="category-actions">${botaoIcone("editar",`abrirEdicaoCategoria(${c.id})`,"Editar categoria")}${botaoIcone("excluir",`excluirCategoria(${c.id})`,"Excluir categoria")}</span></div>`).join('')}</div>`:'<div class="empty-state">Nenhuma categoria cadastrada.</div>'}
+function renderCategoriasGerencia(){$("categoriesContent").innerHTML=categoriasGerencia.length?`<div class="category-table"><div class="category-row category-head"><span>Nome</span><span>Tipo</span><span>Ativa</span><span>Ações</span></div>${categoriasGerencia.map(c=>`<details class="category-mobile-item"><summary><span class="category-mobile-name"><strong>${escaparHtml(c.nome)}</strong><small>${c.tipo==="RECEITA"?"Receita":"Despesa"}</small></span><span class="category-mobile-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></summary><div class="category-mobile-detail"><label class="switch" title="${c.ativa?'Categoria ativa':'Categoria inativa'}"><input type="checkbox" ${c.ativa?'checked':''} onchange="alternarCategoria(${c.id},this)"><span class="switch-slider"></span><span class="sr-only">${c.ativa?'Ativa':'Inativa'}</span></label><span class="category-actions">${botaoIcone("editar",`abrirEdicaoCategoria(${c.id})`,"Editar categoria")}${botaoIcone("excluir",`excluirCategoria(${c.id})`,"Excluir categoria")}</span></div></details><div class="category-row category-desktop-row"><span class="category-name"><strong>${escaparHtml(c.nome)}</strong></span><span class="category-type">${c.tipo==="RECEITA"?"Receita":"Despesa"}</span><span class="category-active"><label class="switch" title="${c.ativa?'Categoria ativa':'Categoria inativa'}"><input type="checkbox" ${c.ativa?'checked':''} onchange="alternarCategoria(${c.id},this)"><span class="switch-slider"></span><span class="sr-only">${c.ativa?'Ativa':'Inativa'}</span></label></span><span class="category-actions">${botaoIcone("editar",`abrirEdicaoCategoria(${c.id})`,"Editar categoria")}${botaoIcone("excluir",`excluirCategoria(${c.id})`,"Excluir categoria")}</span></div>`).join('')}</div>`:'<div class="empty-state">Nenhuma categoria cadastrada.</div>'}
 function abrirEdicaoCategoria(id=null){fecharCamada("categoriesModal",false);const c=id?categoriasGerencia.find(x=>x.id===id):null;$("categoryId").value=c?.id||"";$("categoryName").value=c?.nome||"";$("categoryType").value=c?.tipo||"DESPESA";$("categoryEditTitle").textContent=c?"Editar categoria":"Nova categoria";$("categoryError").textContent="";abrirCamada("categoryEditModal")}
 async function salvarCategoria(e){e.preventDefault();const id=$("categoryId").value,gid=$("categoryScope").value,d={nome:$("categoryName").value.trim(),tipo:$("categoryType").value,grupoId:gid?+gid:null};const r=await fetch(id?`/api/categorias/${id}`:"/api/categorias",{method:id?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok){$("categoryError").textContent=await erro(r);return}fecharCamada("categoryEditModal",false);await carregarCategoriasGerencia();await carregarCategorias();await abrirCategorias();toast(id?"Categoria alterada.":"Categoria criada.")}
 async function alternarCategoria(id,el=null){if(el)el.disabled=true;const r=await fetch(`/api/categorias/${id}/ativa`,{method:"PATCH"});if(!r.ok){if(el){el.checked=!el.checked;el.disabled=false}mensagem(await erro(r));return}await carregarCategoriasGerencia();await carregarCategorias()}

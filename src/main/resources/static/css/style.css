@@ -502,7 +502,7 @@ th.sortable:hover { background:#f3f4f6; }
 .group-accounts .group-table-head,.group-accounts .group-table-row{grid-template-columns:minmax(0,1fr) minmax(180px,1fr)!important}.group-accounts .group-table-head>span:nth-child(2),.group-accounts .group-table-row>span:nth-child(2){text-align:center!important;justify-self:stretch}.group-accounts .group-table-row>span:nth-child(2){display:flex;justify-content:center;align-items:center}.shared-badge{display:inline-flex!important;align-items:center;justify-content:center;text-align:center}
 /* Camadas: sempre abaixo do header, sem scroll externo. */
 .modal{position:fixed!important;inset:var(--luvi-header-height) 0 0 0!important;width:auto!important;height:calc(100dvh - var(--luvi-header-height))!important;padding:16px!important;overflow:hidden!important;align-items:center!important;justify-content:center!important}.modal-content{width:min(720px,100%);height:auto;max-height:calc(100dvh - var(--luvi-header-height) - 32px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}.modal-wide{width:min(970px,100%)}.modal-content>.modal-header{flex:none!important}.modal-content>.modal-body{flex:1 1 auto!important;min-height:0!important;overflow:auto!important}.modal-content>.modal-actions{flex:none!important}.viewport-form{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}.viewport-form>.modal-body{flex:1 1 auto!important;min-height:0!important;overflow:auto!important}.viewport-form>.modal-actions{flex:none!important}
-#viewModal .selection-item{position:relative;padding-left:50px}.selection-item::before{content:"";position:absolute;left:16px;width:20px;height:20px;background-repeat:no-repeat;background-size:contain;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 5c-5.5 0-9.5 5.1-9.7 5.3a2.6 2.6 0 0 0 0 3.4C2.5 13.9 6.5 19 12 19s9.5-5.1 9.7-5.3a2.6 2.6 0 0 0 0-3.4C21.5 10.1 17.5 5 12 5Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z'/%3E%3C/svg%3E")}
+#viewModal .selection-item{position:relative;padding-left:50px}#viewModal .selection-item::before{content:"";position:absolute;left:16px;width:20px;height:20px;background-repeat:no-repeat;background-size:contain;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 5c-5.5 0-9.5 5.1-9.7 5.3a2.6 2.6 0 0 0 0 3.4C2.5 13.9 6.5 19 12 19s9.5-5.1 9.7-5.3a2.6 2.6 0 0 0 0-3.4C21.5 10.1 17.5 5 12 5Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z'/%3E%3C/svg%3E")}
 @media(max-width:700px){.view-prefix{display:none}.view-context-button{padding:8px 9px;gap:6px;max-width:150px}.view-context-button #contextoTitulo{max-width:82px}.header-eye{width:19px;height:19px}.user-menu-button #usuarioNome{display:none}.user-avatar{width:31px;height:31px}.modal{padding:8px!important}.modal-content{max-height:calc(100dvh - var(--luvi-header-height) - 16px)!important}.group-accounts .group-table-head,.group-accounts .group-table-row{grid-template-columns:minmax(0,1fr) minmax(135px,.8fr)!important}.category-scope-field{margin-top:10px}}
 
 /* v5.11.2 - nested layers and dashboard chart stability */
@@ -696,3 +696,445 @@ th.sortable:hover { background:#f3f4f6; }
 .share-action svg{width:21px;height:21px;fill:none;stroke:currentColor;flex:none}
 .account-mobile-chevron{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;line-height:1;flex:none;font-size:initial}
 .account-mobile-chevron svg{width:20px;height:20px;display:block}
+
+/* v5.11.14 - categorias expansíveis no celular */
+.category-mobile-item{display:none}
+@media(max-width:700px){
+ #categoriesModal .category-desktop-row,#categoriesModal .category-head{display:none!important}
+ #categoriesModal .category-mobile-item{display:block;border-bottom:1px solid #e5e7eb}
+ #categoriesModal .category-mobile-item:last-child{border-bottom:0}
+ #categoriesModal .category-mobile-item summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 12px;cursor:pointer}
+ #categoriesModal .category-mobile-item summary::-webkit-details-marker{display:none}
+ #categoriesModal .category-mobile-name{display:flex;flex-direction:column;min-width:0;gap:3px}
+ #categoriesModal .category-mobile-name strong{overflow-wrap:anywhere}
+ #categoriesModal .category-mobile-name small{font-size:13px;color:#6b7280;font-weight:400}
+ #categoriesModal .category-mobile-chevron{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none}
+ #categoriesModal .category-mobile-chevron svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease}
+ #categoriesModal .category-mobile-item[open] .category-mobile-chevron svg{transform:rotate(180deg)}
+ #categoriesModal .category-mobile-detail{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 12px 14px}
+ #categoriesModal .category-mobile-detail .category-actions{display:flex;grid-column:auto;border:0;padding:0;margin:0;gap:10px}
+}
+
+/* LUVI v6.0.0 — mobile-first etapa 1 */
+.mobile-home-intro,.mobile-quick-actions,.mobile-bottom-nav{display:none}
+@media(max-width:700px){
+:root{--mobile-navy:#071d3a} body{background:#f5f7fb;padding-bottom:78px}
+.sidebar{z-index:500}.overlay{z-index:490}
+.topbar{height:68px;background:var(--mobile-navy);padding:0 16px;box-shadow:none}.menu-button{display:none!important}
+.topbar-brand{gap:8px}.topbar-logo{height:34px}.topbar-brand-gold-divider,.topbar-context-divider,.view-prefix,.header-eye{display:none}
+.topbar-brand-name strong{font-size:20px}.topbar-brand-product{font-size:9px}.view-context-button{max-width:112px;padding:7px 8px;background:rgba(255,255,255,.08);border-radius:16px}
+.view-context-button #contextoTitulo{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.user-menu-button{padding:4px}.user-menu-button #usuarioNome,.user-chevron{display:none}.user-avatar{width:34px;height:34px}
+.container{padding:0 14px 22px;max-width:none}
+.mobile-home-intro{display:flex;margin:0 -14px;padding:16px 18px 48px;background:var(--mobile-navy);color:#fff}
+.mobile-home-intro h1{margin:3px 0 2px;font-size:21px}.mobile-home-intro p{margin:0;color:#d9e2ef;font-size:13px}.mobile-eyebrow{font-size:10px;letter-spacing:1.4px;color:#e2bd7d;font-weight:800}
+.month-navigation{margin-top:-32px;background:#fff;border-radius:16px 16px 0 0;padding:12px 12px 4px;box-shadow:0 7px 24px rgba(7,29,58,.08)}.month-navigation h2{font-size:15px}
+.summary-grid-extrato{grid-template-columns:1fr 1fr;margin:0;background:#fff;border-radius:0 0 16px 16px;padding:4px 10px 12px;gap:8px;box-shadow:0 7px 24px rgba(7,29,58,.08)}
+.summary-grid-extrato .summary-card{box-shadow:none;border:0;background:#f7f9fc;padding:12px;border-radius:12px}.summary-card span{font-size:11px}.summary-card strong{font-size:16px}.summary-card.receita{background:#f1fbf5}.summary-card.despesa{background:#fff5f5}
+.mobile-quick-actions{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:14px 0 16px}.mobile-quick-actions button{border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;color:#0b1f3a;min-width:0}
+.mobile-quick-actions button>span{display:flex;width:46px;height:46px;border-radius:15px;align-items:center;justify-content:center;background:#fff;box-shadow:0 3px 12px rgba(7,29,58,.08);font-size:22px;font-weight:700}.mobile-quick-actions button:first-child>span{background:#0b5fbd;color:#fff}.mobile-quick-actions small{font-size:10px;line-height:1.15;text-align:center}
+.container>.actions{display:none}.table-card{border:0;border-radius:16px;box-shadow:0 4px 18px rgba(7,29,58,.07);overflow:hidden;scroll-margin-top:78px}.table-header{padding:16px 14px 10px}.table-header h2{font-size:17px}.table-container{overflow:visible}
+table,tbody{display:block;width:100%}thead{display:none}#lancamentosBody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:13px 14px;border-top:1px solid #edf0f4;background:#fff}
+#lancamentosBody td{display:block;border:0!important;padding:0!important;min-width:0}#lancamentosBody td:nth-child(3){grid-column:1;grid-row:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#lancamentosBody td:nth-child(2){grid-column:2;grid-row:1;text-align:right;font-weight:800;white-space:nowrap}
+#lancamentosBody td:nth-child(4){grid-column:1;grid-row:2;color:#667085;font-size:12px}#lancamentosBody td:nth-child(1){grid-column:2;grid-row:2;color:#667085;font-size:12px;text-align:right}#lancamentosBody td:nth-child(5){grid-column:1;grid-row:3;color:#98a2b3;font-size:11px}#lancamentosBody td:nth-child(6){grid-column:2;grid-row:3;text-align:right}#lancamentosBody .icon-action{width:30px;height:30px}
+.mobile-bottom-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:450;background:rgba(255,255,255,.98);border-top:1px solid #e5e9ef;padding:7px 8px max(7px,env(safe-area-inset-bottom));box-shadow:0 -6px 18px rgba(7,29,58,.06)}
+.mobile-bottom-nav button{border:0;background:transparent;color:#718096;display:flex;flex-direction:column;align-items:center;gap:2px;padding:2px;font-size:20px}.mobile-bottom-nav button small{font-size:10px;font-weight:700}.mobile-bottom-nav button.active{color:#08264b}
+.modal{top:68px!important;height:calc(100dvh - 68px)!important;padding:0!important;background:#f5f7fb!important;align-items:stretch!important}.modal>.modal-content{width:100%!important;max-width:none!important;height:calc(100dvh - 68px)!important;max-height:none!important;border-radius:0!important;margin:0!important;box-shadow:none!important}
+.modal-content>.modal-header{background:#fff;border-bottom:1px solid #edf0f4;padding:14px 16px!important;min-height:56px}.modal-content>.modal-header h2{font-size:18px}.modal-content>.modal-body,.viewport-form>.modal-body{padding:14px!important}.modal-content>.modal-actions,.viewport-form>.modal-actions{padding:12px 14px max(12px,env(safe-area-inset-bottom))!important}
+.close-button{font-size:0;width:38px;height:38px}.close-button::before{content:"‹";font-size:34px;line-height:1;color:#0b1f3a}
+#messageModal{padding:14px!important;align-items:center!important;background:rgba(7,29,58,.42)!important}#messageModal>.modal-content{height:auto!important;max-height:80dvh!important;border-radius:16px!important;box-shadow:0 16px 50px rgba(0,0,0,.2)!important}
+.account-mobile{border:0;border-radius:14px;box-shadow:0 3px 14px rgba(7,29,58,.06)}.account-mobile-item>summary{padding:16px 14px}.account-mobile-type{background:#f2f5f9;border-radius:12px;padding:4px 8px}
+}
+
+
+/* =========================================================
+   LUVI Finanças v6.0.1 — refinamento visual mobile
+   ========================================================= */
+@media(max-width:700px){
+  :root{--luvi-radius:16px;--luvi-bottom-nav-h:72px}
+
+  /* Home: respiro correto entre atalhos e seletor do mês */
+  .mobile-quick-actions{
+    grid-template-columns:repeat(3,1fr);
+    max-width:360px;
+    margin:16px auto 22px;
+    gap:18px;
+  }
+  .mobile-quick-actions button>span{border-radius:var(--luvi-radius)}
+  .month-navigation{
+    margin-top:0;
+    border-radius:var(--luvi-radius) var(--luvi-radius) 0 0;
+    position:relative;
+    z-index:1;
+  }
+  .summary-grid-extrato{border-radius:0 0 var(--luvi-radius) var(--luvi-radius)}
+  .summary-grid-extrato .summary-card,
+  .table-card,.account-mobile,
+  .card,.chart-card{border-radius:var(--luvi-radius)}
+
+  /* Barra inferior: apenas navegação global não repetida */
+  .mobile-bottom-nav{grid-template-columns:repeat(3,1fr);min-height:var(--luvi-bottom-nav-h)}
+
+  /* Subtelas: conteúdo e ações nunca ficam atrás da barra inferior */
+  .modal{
+    bottom:var(--luvi-bottom-nav-h)!important;
+    height:calc(100dvh - 68px - var(--luvi-bottom-nav-h))!important;
+    overflow:hidden!important;
+  }
+  .modal>.modal-content{
+    height:100%!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .modal-content>.modal-header{flex:0 0 auto}
+  .modal-content>.modal-body,
+  .viewport-form>.modal-body{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    padding-bottom:22px!important;
+  }
+  .modal-content>.modal-actions,
+  .viewport-form>.modal-actions{
+    position:relative!important;
+    bottom:auto!important;
+    flex:0 0 auto!important;
+    z-index:3;
+    background:#fff;
+    border-top:1px solid #edf0f4;
+    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
+
+  /* Evita o rodapé global cobrir botões de telas especiais */
+  .modal:not(.hidden)~.mobile-bottom-nav{visibility:hidden}
+  body:has(.modal:not(.hidden)) .mobile-bottom-nav{visibility:hidden}
+
+  /* Cantos coerentes nas superfícies mobile */
+  .modal-content,.modal-header,.modal-body{border-radius:0!important}
+  #messageModal>.modal-content{border-radius:var(--luvi-radius)!important}
+  .category-list,.categories-list,.category-mobile,
+  .account-mobile-item:first-child{border-radius:var(--luvi-radius) var(--luvi-radius) 0 0}
+  .account-mobile-item:last-child{border-radius:0 0 var(--luvi-radius) var(--luvi-radius)}
+}
+
+
+/* =========================================================
+   LUVI Finanças v6.0.2 — correções após teste em aparelho
+   ========================================================= */
+@media(max-width:700px){
+  :root{--luvi-bottom-nav-h:72px}
+
+  /* A navegação principal continua visível nas subtelas.
+     A subtela termina antes dela, portanto não há sobreposição. */
+  .mobile-bottom-nav{
+    display:grid!important;
+    visibility:visible!important;
+    z-index:900!important;
+  }
+  body:has(.modal:not(.hidden)) .mobile-bottom-nav,
+  .modal:not(.hidden)~.mobile-bottom-nav{
+    visibility:visible!important;
+  }
+
+  /* Todas as subtelas ocupam somente a área entre header e navegação inferior. */
+  .modal{
+    top:68px!important;
+    bottom:var(--luvi-bottom-nav-h)!important;
+    height:auto!important;
+    min-height:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  .modal>.modal-content{
+    height:100%!important;
+    max-height:100%!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .modal-content>.modal-header{
+    flex:0 0 auto!important;
+  }
+  .modal-content>.modal-body{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .modal-content>.modal-actions{
+    display:flex!important;
+    flex:0 0 auto!important;
+    position:relative!important;
+    bottom:auto!important;
+    z-index:10!important;
+    background:#fff!important;
+    border-top:1px solid #e5e7eb!important;
+  }
+
+  /* Formulários possuem o mesmo contrato: corpo rola e ações ficam sempre visíveis. */
+  .viewport-form{
+    flex:1 1 0!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .viewport-form>.modal-body{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .viewport-form>.modal-actions{
+    display:flex!important;
+    flex:0 0 auto!important;
+    position:relative!important;
+    bottom:auto!important;
+    z-index:10!important;
+    background:#fff!important;
+    border-top:1px solid #e5e7eb!important;
+  }
+
+  /* Categorias: garante especificamente que Nova categoria / Fechar
+     pertençam ao rodapé fixo da subtela, sem depender do tamanho da lista. */
+  #categoriesModal>.modal-content{
+    height:100%!important;
+    max-height:100%!important;
+  }
+  #categoriesModal .modal-body{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    padding-bottom:18px!important;
+  }
+  #categoriesModal .modal-actions{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    flex:0 0 auto!important;
+    position:relative!important;
+    z-index:20!important;
+    background:#fff!important;
+  }
+
+  /* Dashboard também respeita a navegação inferior. */
+  #dashboardModal .modal-body{padding-bottom:20px!important}
+
+  /* Modal de mensagem permanece centralizado acima da navegação. */
+  #messageModal{padding:14px!important}
+}
+
+/* LUVI v6.0.3 - largura do formulario de lancamentos
+   O form era flex-item sem largura explicita dentro do modal,
+   permitindo encolhimento em determinadas resolucoes. */
+#modal>.modal-content{box-sizing:border-box}
+#modal #lancamentoForm{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  align-self:stretch!important;
+  box-sizing:border-box!important;
+}
+#modal #lancamentoForm>.modal-body,
+#modal #lancamentoForm>.modal-actions{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#modal #lancamentoForm .form-row,
+#modal #lancamentoForm .form-group,
+#modal #lancamentoForm label{
+  min-width:0;
+  box-sizing:border-box;
+}
+@media(max-width:700px){
+  #modal>.modal-content{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+  }
+  #modal #lancamentoForm{
+    flex:1 1 auto!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #modal #lancamentoForm>.modal-body{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+  #modal #lancamentoForm input:not([type=checkbox]):not([type=radio]),
+  #modal #lancamentoForm select,
+  #modal #lancamentoForm textarea{
+    display:block;
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+}
+
+
+/* ========================================================
+   LUVI Finanças v6.0.4 - listas e subtelas mobile-first
+   ======================================================== */
+@media (max-width:700px){
+  /* A antiga regra de ícone aplica-se somente à seleção de visão. */
+  #groupsModal .selection-item::before,
+  #accountsModal .selection-item::before,
+  #membersModal .selection-item::before{content:none!important;display:none!important}
+
+  /* Listas de grupos, membros, contas e compartilhamentos */
+  #groupsContent.selection-list{gap:10px}
+  #groupsContent .luvi-mobile-list-item{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:12px!important;
+    min-height:76px;
+    padding:16px!important;
+    border-radius:16px;
+    position:relative;
+    width:100%;
+    text-align:left;
+    background:#fff;
+  }
+  #groupsContent .luvi-list-main{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    flex:1 1 auto;
+    min-width:0;
+    margin:0;
+    padding:0;
+  }
+  #groupsContent .luvi-list-main strong{font-size:16px;line-height:1.3;overflow-wrap:anywhere}
+  #groupsContent .luvi-list-main small{font-size:13px;color:#667085;margin-top:5px}
+  .luvi-list-chevron{width:20px;height:20px;fill:none;stroke:#667085;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+
+  /* Estrutura visual consistente entre as demais telas */
+  #accountsContent .account-mobile,
+  #categoriesContent .category-table,
+  #membersContent .member-list,
+  #groupContent .group-panel,
+  #shareAccountContent .share-choice,
+  #groupsContent .selection-item,
+  #viewContent .selection-item{
+    border-radius:16px;
+    background:#fff;
+  }
+  #accountsContent .account-mobile-item>summary,
+  #categoriesContent .category-mobile-item>summary,
+  #membersContent .member-row,
+  #groupContent .group-table-row{
+    min-height:62px;
+    padding:15px 16px;
+  }
+  #categoriesContent .category-mobile-item>summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #categoriesContent .category-mobile-detail{
+    padding:12px 16px 16px;
+    border-top:1px solid #edf0f4;
+  }
+  #membersContent .member-row:last-child,
+  #groupContent .group-table-row:last-child{border-bottom:0}
+  #shareAccountContent .share-choice{padding:16px;margin-bottom:10px;min-height:65px}
+  #groupContent .group-panel{overflow:hidden}
+  #groupContent .group-panel-title{background:#fff;padding:16px}
+
+  /* Todos os rodapés de subtela seguem a mesma altura/ritmo visual. */
+  .modal-content>.modal-actions,
+  .viewport-form>.modal-actions{
+    gap:10px!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    box-shadow:0 -4px 12px rgba(7,29,58,.035);
+  }
+  .modal-content>.modal-actions button,
+  .viewport-form>.modal-actions button{
+    border-radius:12px!important;
+    min-height:44px;
+  }
+  .modal-content>.modal-body,
+  .viewport-form>.modal-body{background:#f8fafc}
+  #groupsModal .modal-body,
+  #accountsModal .modal-body,
+  #categoriesModal .modal-body,
+  #membersModal .modal-body,
+  #groupModal .modal-body{padding:16px!important}
+
+  /* Conteúdo principal sempre acima do rodapé fixo do navegador. */
+  .mobile-bottom-nav{background:#fff}
+}
+
+/* LUVI v6.0.5 — correção do diálogo Novo grupo */
+@media(max-width:700px){
+  #messageModal:not(.hidden){
+    position:fixed!important;
+    inset:0!important;
+    top:0!important;
+    right:0!important;
+    bottom:0!important;
+    left:0!important;
+    height:100dvh!important;
+    width:100%!important;
+    z-index:2000!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    padding:18px!important;
+    background:rgba(7,29,58,.55)!important;
+    pointer-events:auto!important;
+  }
+  #messageModal>.modal-content{
+    display:flex!important;
+    flex-direction:column!important;
+    flex:0 1 auto!important;
+    width:100%!important;
+    max-width:420px!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:calc(100dvh - 36px)!important;
+    margin:auto!important;
+    overflow:auto!important;
+    border-radius:16px!important;
+    background:#fff!important;
+    box-shadow:0 18px 60px rgba(0,0,0,.25)!important;
+    pointer-events:auto!important;
+  }
+  #messageModal #messageText{
+    padding:18px 16px!important;
+    margin:0!important;
+    overflow-y:auto!important;
+    flex:0 1 auto!important;
+  }
+  #messageModal #genericTextInput{
+    display:block;
+    width:100%!important;
+    min-height:44px;
+    box-sizing:border-box;
+  }
+  #messageModal .modal-actions{
+    display:flex!important;
+    flex:0 0 auto!important;
+    position:relative!important;
+    padding:12px 16px 16px!important;
+    gap:10px;
+    z-index:1!important;
+  }
+  #messageModal .modal-actions button{
+    min-height:44px;
+    cursor:pointer!important;
+    pointer-events:auto!important;
+  }
+}
+
+/* v6.0.6: dois atalhos superiores */
+@media(max-width:700px){.mobile-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));max-width:270px;gap:24px}}
