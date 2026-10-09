@@ -35,6 +35,11 @@ document.addEventListener("DOMContentLoaded",async()=>{
     if(e.target?.id==="categoryScope"){categoriaEscopoPreferido=e.target.value;await carregarCategoriasGerencia()}
   });
 
+  // v6.1.7: o Voltar do Android / gesto de retorno do iOS fecha a camada
+  // atual como Escape, sem retornar ao login pelo histórico do navegador.
+  // Usamos uma entrada sentinela da History API, sem alterar a URL.
+  iniciarVoltarNativo();
+
   // Eventos críticos precisam existir antes dos carregamentos assíncronos,
   // sem alterar a ordem original de carga dos dados.
   document.addEventListener("keydown",e=>{
@@ -241,11 +246,47 @@ let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
 function fecharSubtelasPrincipais(excecao=null){["categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
-function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;if(el.classList.contains("hidden"))el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();return true}
+function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}
 function sincronizarCamadas(){const temModal=modais().length>0;document.body.classList.toggle("modal-open",temModal)}
 function fecharTopo(){const abertos=modais().sort((a,b)=>(+(b.dataset.openOrder||0))-(+(a.dataset.openOrder||0)));if(abertos.length){const id=abertos[0].id;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)abrirGrupo(grupoGerenciado);return true}if(id==="shareAccountModal"){fecharCamada(id);abrirContas();return true}if(id==="accountEditModal"){fecharCamada(id,false);abrirContas();return true}if(id==="categoryEditModal"){fecharCamada(id,false);abrirCategorias();return true}if(id==="inviteGeneratedModal"){fecharConviteGerado();return true}return fecharCamada(id);}if($("usuarioDropdown")&&!$("usuarioDropdown").classList.contains("hidden")){ $("usuarioDropdown").classList.add("hidden");$("usuarioMenuButton").setAttribute("aria-expanded","false");return true}if($("sidebar").classList.contains("open")){toggleMenu(false);return true}return false}
+// v6.1.10: cada abertura real de tela cria uma entrada do navegador.
+// O retorno de uma subtela restaura a tela anterior SEM criar outra entrada.
+// Isso resolve o caso Início > Categorias > Nova categoria > Categorias > Início.
+let luviHistoricoPronto=false;
+let luviSuprimirAbertura=null;
+function registrarCamadaNoHistorico(id){
+  if(!luviHistoricoPronto)return;
+  if(luviSuprimirAbertura===id){luviSuprimirAbertura=null;return}
+  try{history.pushState({__luviTela:id},"",location.href)}
+  catch(e){console.warn("Não foi possível registrar a tela no histórico:",e)}
+}
+function iniciarVoltarNativo(){
+  if(luviHistoricoPronto)return;
+  try{
+    // Mantém uma entrada de Início antes das telas internas. O login anterior
+    // não é acionado ao fechar uma tela, mesmo em fluxos com várias etapas.
+    history.replaceState({...((history.state&&typeof history.state==="object")?history.state:{}),__luviRaiz:true},"",location.href);
+    history.pushState({__luviInicio:true},"",location.href);
+    luviHistoricoPronto=true;
+    window.addEventListener("popstate",()=>{
+      const topo=modais().sort((a,b)=>(+(b.dataset.openOrder||0))-(+(a.dataset.openOrder||0)))[0];
+      if(topo){
+        const anterior={categoryEditModal:"categoriesModal",accountEditModal:"accountsModal",membersModal:"groupModal",shareAccountModal:"accountsModal"}[topo.id];
+        luviSuprimirAbertura=anterior||null;
+        fecharTopo();
+        // Limpa o marcador se a restauração não precisar abrir a tela.
+        if(anterior)setTimeout(()=>{if(luviSuprimirAbertura===anterior)luviSuprimirAbertura=null},1500);
+      }else if($( "usuarioDropdown")&&!$("usuarioDropdown").classList.contains("hidden")||$("sidebar")?.classList.contains("open")){
+        fecharTopo();
+      }else{
+        // Já estamos em Início: preserva uma entrada de navegação local.
+        try{history.pushState({__luviInicio:true},"",location.href)}catch(e){console.warn(e)}
+      }
+    });
+  }catch(e){console.warn("Navegação interna indisponível:",e)}
+}
 function rotuloTipoConta(t){return({BANCO:"Banco",CARTEIRA:"Carteira",OUTROS:"Outros"})[t]||t}
 function formatarMoeda(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function formatarData(d){const[a,m,x]=d.split("-");return`${x}/${m}/${a}`}function formatarCategoria(c){return({SALARIO:"Salário",RENDA_EXTRA:"Renda extra",ALIMENTACAO:"Alimentação",MORADIA:"Moradia",TRANSPORTE:"Transporte",SAUDE:"Saúde",EDUCACAO:"Educação",LAZER:"Lazer",CONTAS:"Contas",OUTROS:"Outros",TRANSFERENCIA:"Transferência"})[c]||c}function hojeISO(){const h=new Date(),d=new Date(h.getTime()-h.getTimezoneOffset()*60000);return d.toISOString().slice(0,10)}function escaparHtml(t){const d=document.createElement("div");d.textContent=t||"";return d.innerHTML}function js(t){return String(t||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'")}async function erro(r){try{const x=await r.json();return x.message||x.detail||"Operação não permitida."}catch(_){return"Não foi possível concluir a operação no LUVI Finanças."}}
 
