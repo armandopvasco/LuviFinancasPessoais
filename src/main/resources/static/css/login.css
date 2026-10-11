@@ -110,3 +110,26 @@ button:hover {
 .google-button{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid #d1d5db;border-radius:9px;background:#fff;color:#1f2937;font-size:15px;font-weight:600;text-decoration:none}
 .google-button:hover{background:#f9fafb;border-color:#9ca3af}.google-g{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid #d1d5db;font-weight:700}
 .separator{display:flex;align-items:center;gap:12px;margin:22px 0 4px;color:#9ca3af;font-size:13px}.separator:before,.separator:after{content:"";flex:1;height:1px;background:#e5e7eb}
+
+
+/* LUVI identidade 2026: login. */
+body { background:#F5F8FC; color:#102F59; }
+.login-card { box-shadow:0 14px 38px rgba(16,47,89,.10); }
+.luvi-login-mark { width:235px; height:160px; object-fit:contain; margin:0 auto 0; }
+button[type="submit"] { background:#17518C; }
+button[type="submit"]:hover { background:#102F59; }
+.google-button { color:#102F59; }
+input:focus { outline:2px solid #A9CBE9; outline-offset:1px; }
+
+/* v6.2.3 - Logotipo quadrado com quinas arredondadas */
+.luvi-login-mark {
+  display:block;
+  width:168px;
+  height:168px;
+  max-width:100%;
+  margin:0 auto 12px;
+  object-fit:cover;
+  background:#D8EAFB;
+  border-radius:22px;
+  overflow:hidden;
+}

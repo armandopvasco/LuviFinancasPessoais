@@ -1182,3 +1182,94 @@ table,tbody{display:block;width:100%}thead{display:none}#lancamentosBody tr{disp
 
 /* PWA v6.1.1: menu do usuário acessível acima do conteúdo no celular */
 @media(max-width:700px){.topbar{z-index:950!important}.user-menu-wrap{z-index:960!important}.user-dropdown:not(.hidden){z-index:970!important;pointer-events:auto!important}.user-dropdown .logout-option{min-height:44px;pointer-events:auto!important}}
+
+
+/* LUVI identidade 2026: ajuste exclusivamente visual. */
+:root {
+  --luvi-brand-navy:#102F59;
+  --luvi-brand-blue:#D8EAFB;
+  --luvi-brand-green:#8DA67C;
+  --luvi-brand-surface:#F5F8FC;
+}
+body { background:var(--luvi-brand-surface); }
+.topbar { background:var(--luvi-brand-navy); }
+.topbar-brand-name strong { color:#D8EAFB; }
+.topbar-brand-product { color:#D8EAFB; }
+.topbar-brand-gold-divider { background:#8DA67C; box-shadow:none; }
+.topbar-logo { border-radius:9px; object-fit:cover; background:#D8EAFB; }
+.primary-button { background:#17518C; }
+.primary-button:hover { background:#102F59; }
+.mobile-eyebrow { color:#C6DDF3; }
+@media(max-width:700px) {
+  :root { --mobile-navy:#102F59; }
+  body { background:#F5F8FC; }
+  .topbar,.mobile-home-intro { background:#102F59; }
+  .mobile-bottom-nav { background:#FFFFFF; }
+}
+
+
+/* v6.2.1 - Marca completa LUVI na imagem; somente Finanças ao lado. */
+.topbar .topbar-logo {
+  width:94px;
+  height:42px;
+  flex:0 0 94px;
+  object-fit:contain;
+  background:#D8EAFB;
+}
+.topbar .topbar-brand-name { display:flex; }
+.topbar .topbar-brand-product {
+  display:inline;
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:.3px;
+  text-transform:none;
+}
+@media(max-width:520px) {
+  .topbar .topbar-logo { width:78px;height:38px;flex-basis:78px; }
+  .topbar .topbar-brand-product { font-size:13px; }
+}
+@media(max-width:390px) {
+  .topbar .topbar-brand-name { display:flex; }
+  .topbar .topbar-brand-product { font-size:12px; }
+}
+
+/* v6.2.2 — simbolo 'i' com transparencia real, sem moldura azul */
+.topbar .topbar-logo {
+  width:28px !important;
+  height:44px !important;
+  flex:0 0 28px !important;
+  object-fit:contain !important;
+  background:transparent !important;
+  border-radius:0 !important;
+  filter:none !important;
+}
+.topbar .topbar-brand-name { display:flex !important; flex-direction:row !important; align-items:center !important; gap:5px !important; }
+.topbar .topbar-brand-name strong { display:inline !important; color:#D8EAFB !important; font-size:18px !important; letter-spacing:.3px !important; }
+.topbar .topbar-brand-product { display:inline !important; color:#FFFFFF !important; font-size:15px !important; letter-spacing:0 !important; text-transform:none !important; font-weight:600 !important; }
+@media(max-width:520px) {
+  .topbar .topbar-logo { width:23px !important;height:38px !important;flex-basis:23px !important; }
+  .topbar .topbar-brand-name strong {font-size:16px !important;}
+  .topbar .topbar-brand-product {font-size:13px !important;}
+}
+
+/* v6.2.3 - Moldura unica azul-clara no simbolo do cabecalho */
+.topbar .topbar-logo {
+  width:43px !important;
+  height:43px !important;
+  flex:0 0 43px !important;
+  box-sizing:border-box !important;
+  padding:5px 13px !important;
+  background:#D8EAFB !important;
+  border:0 !important;
+  border-radius:11px !important;
+  object-fit:contain !important;
+}
+@media(max-width:520px) {
+  .topbar .topbar-logo {
+    width:39px !important;
+    height:39px !important;
+    flex-basis:39px !important;
+    padding:5px 12px !important;
+    border-radius:10px !important;
+  }
+}

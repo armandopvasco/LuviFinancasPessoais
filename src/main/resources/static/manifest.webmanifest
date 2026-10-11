@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "LUVI Finanças",
-  "short_name": "LUVI Finanças",
+  "name": "Finanças",
+  "short_name": "Finanças",
   "description": "Controle financeiro pessoal e familiar",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#081e3c",
-  "theme_color": "#081e3c",
+  "background_color": "#D8EAFB",
+  "theme_color": "#102F59",
   "icons": [
     {
       "src": "/icons/icon-192.png",
