@@ -1273,3 +1273,44 @@ body { background:var(--luvi-brand-surface); }
     border-radius:10px !important;
   }
 }
+
+
+/* LUVI v6.4 - identidade unificada, navegação lateral desktop e grupos */
+:root {
+  --luvi-navy:#102F59;--luvi-blue:#D8EAFB;--luvi-bg:#F5F8FC;
+  --luvi-green:#087A3D;--luvi-red:#C92332;
+}
+body{background:var(--luvi-bg)}
+.sidebar{background:linear-gradient(160deg,#102F59,#073364);color:#fff}
+.sidebar .side-title{color:#fff;font-size:20px;font-weight:750}
+.sidebar .side-section{color:#afcbe5;letter-spacing:.09em}
+.sidebar .nav-item{display:flex;align-items:center;gap:13px;color:#fff;border-radius:12px;text-align:left}
+.sidebar .nav-item:hover,.sidebar .nav-item:focus-visible{background:rgba(216,234,251,.16)}
+.sidebar .nav-item svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.summary-card.receita{background:#eaf7f0}
+.summary-card.despesa{background:#fff0f0}
+.summary-card.receita strong{color:#087A3D}
+.summary-card.despesa strong{color:#C92332}
+.luvi-group-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid #e7edf5}
+.luvi-group-row .luvi-group-open{flex:1;min-width:0;text-align:left}
+.luvi-group-inactive .luvi-group-open{opacity:.68}
+.luvi-switch{display:inline-flex;align-items:center;position:relative;flex:none;cursor:pointer}
+.luvi-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.luvi-switch-track{width:47px;height:27px;border-radius:30px;background:#a7b7ca;display:inline-block;position:relative;transition:background .2s}
+.luvi-switch-track:before{content:"";position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:transform .2s}
+.luvi-switch input:checked + .luvi-switch-track{background:#18a45b}
+.luvi-switch input:checked + .luvi-switch-track:before{transform:translateX(20px)}
+.luvi-switch input:focus-visible + .luvi-switch-track{outline:3px solid #6ca5df;outline-offset:3px}
+.luvi-switch input:disabled + .luvi-switch-track{opacity:.5}
+@media(min-width:1000px){
+  body{padding-left:255px}
+  .sidebar{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;
+    width:255px !important;transform:none !important;visibility:visible !important;
+    z-index:20 !important;padding:24px 14px;overflow-y:auto}
+  .topbar{position:relative;z-index:10}
+  .container{max-width:1440px;margin:0 auto}
+  .overlay{display:none !important}
+  #menuButton{display:none !important}
+  .mobile-bottom-nav{display:none !important}
+}
+@media(max-width:999px){body{padding-left:0}}

@@ -17,13 +17,13 @@ window.fetch=async(...args)=>{
 };
 const icone=(tipo)=>tipo==="editar"?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Zm16.7-9.8a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L15.5 5l3.5 3.5 1.7-1.8Z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7Zm10-17h-3.5l-1-1h-5l-1 1H3v2h18V4h-4Z"/></svg>';
 const botaoIcone=(tipo,acao,rotulo)=>`<button type="button" class="icon-action ${tipo}" onclick="${acao}" title="${rotulo}" aria-label="${rotulo}">${icone(tipo)}</button>`;
-const modais=()=>["shareAccountModal","membersModal","groupsModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
+const modais=()=>["shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
 
 document.addEventListener("DOMContentLoaded",async()=>{
   // v5.11.1: delegação central. Continua funcionando mesmo para conteúdo criado dinamicamente.
   document.addEventListener("click",async e=>{
     const close=e.target.closest("[data-close-modal]");
-    if(close){e.preventDefault();e.stopPropagation();const id=close.dataset.closeModal;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)await abrirGrupo(grupoGerenciado)}else if(id==="shareAccountModal"){fecharCamada(id);abrirContas()}else if(id==="accountEditModal"){fecharCamada(id,false);abrirContas()}else if(id==="categoryEditModal"){fecharCamada(id,false);await abrirCategorias()}else if(id==="inviteGeneratedModal"){await fecharConviteGerado()}else fecharCamada(id);return}
+    if(close){e.preventDefault();e.stopPropagation();const id=close.dataset.closeModal;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)await abrirGrupo(grupoGerenciado)}else if(id==="shareAccountModal"){fecharCamada(id);abrirContas()}else if(id==="groupCreateModal"){fecharCamada(id,false);abrirGrupos();return true}if(id==="accountEditModal"){fecharCamada(id,false);abrirContas()}else if(id==="categoryEditModal"){fecharCamada(id,false);await abrirCategorias()}else if(id==="inviteGeneratedModal"){await fecharConviteGerado()}else fecharCamada(id);return}
     const group=e.target.closest("[data-open-group]");
     if(group){e.preventDefault();e.stopPropagation();await abrirGrupo(+group.dataset.openGroup);return}
     const members=e.target.closest('[data-action="open-members"]');
@@ -59,7 +59,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
   // Navegação de grupos deve funcionar independentemente das chamadas iniciais.
   $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal");
-  $("novoGrupoButton").onclick=criarGrupo;
+  $("novoGrupoButton").onclick=abrirCadastroGrupo;
+  $("groupCreateForm").onsubmit=criarGrupo;
   await carregarContexto(); await carregarCategorias(); await carregarDadosMes();
   $("mesAnterior").onclick=async()=>{dataAtual.setMonth(dataAtual.getMonth()-1);await carregarDadosMes()};
   $("mesProximo").onclick=async()=>{dataAtual.setMonth(dataAtual.getMonth()+1);await carregarDadosMes()};
@@ -78,7 +79,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("dashboardMenu").onclick=abrirDashboard; $("contasMenu").onclick=abrirContas; $("categoriasMenu").onclick=abrirCategorias; $("gruposMenu").onclick=abrirGrupos; $("visaoHeaderButton").onclick=abrirVisao;
   $("entrarGrupoMenu").onclick=abrirEntradaConvite;
   $("fecharView").onclick=$("cancelarView").onclick=()=>fecharCamada("viewModal");
-  $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal"); $("novoGrupoButton").onclick=criarGrupo;
+  $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal"); $("novoGrupoButton").onclick=abrirCadastroGrupo;
   $("fecharMembers").onclick=$("cancelarMembers").onclick=async()=>{fecharCamada("membersModal");if(grupoGerenciado)await abrirGrupo(grupoGerenciado)}; $("membersInviteButton").onclick=()=>{if(grupoGerenciado)gerarConvite(grupoGerenciado)};
   $("fecharShareAccount").onclick=$("cancelarShareAccount").onclick=()=>{fecharCamada("shareAccountModal");abrirContas()};
   $("usuarioMenuButton").onclick=e=>{e.stopPropagation();const aberto=$("usuarioDropdown").classList.toggle("hidden")===false;$("usuarioMenuButton").setAttribute("aria-expanded",String(aberto))}; document.addEventListener("click",e=>{if(!e.target.closest(".user-menu-wrap")){ $("usuarioDropdown").classList.add("hidden"); $("usuarioMenuButton").setAttribute("aria-expanded","false") }});
@@ -109,27 +110,35 @@ function abrirEdicaoConta(id=null){fecharCamada("accountsModal",false);const c=i
 async function salvarConta(e){e.preventDefault();const id=$("accountId").value,d={nome:$("accountName").value.trim(),tipo:$("accountType").value};const r=await fetch(id?`/api/app/contas/${id}`:"/api/app/contas",{method:id?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok){$("accountError").textContent=await erro(r);return}fecharCamada("accountEditModal",false);await carregarContexto();abrirContas();toast(id?"Conta alterada com sucesso.":"Conta criada. Por padrão, ela é privada.")}
 async function excluirConta(id){const c=contas.find(x=>x.id===id);if(!await confirmar(`Deseja excluir a conta “${c?.nome||''}”?\n\nA exclusão só será permitida se ela não possuir movimentações.`))return;const r=await fetch(`/api/app/contas/${id}`,{method:"DELETE"});if(!r.ok){mensagem(await erro(r),"Não foi possível excluir");return}if(contaSelecionada===id)selecionarVisaoGeral();await carregarContexto();renderContas();toast("Conta excluída.")}
 
-async function criarGrupo(){
+function abrirCadastroGrupo(){
   toggleMenu(false);
-  // Diálogo nativo isolado da pilha de modais do LUVI: evita travamentos
-  // de foco/camadas e permite Cancelar/Voltar do navegador.
-  const resposta=window.prompt("Nome do novo grupo:", "");
-  if(resposta===null)return;
-  const nome=resposta.trim();
-  if(!nome){mensagem("Informe um nome para o grupo.");return}
+  fecharCamada("groupsModal",false);
+  $("groupCreateForm").reset();
+  $("groupCreateError").textContent="";
+  abrirCamada("groupCreateModal");
+  setTimeout(()=>$("groupCreateName").focus(),30);
+}
+async function criarGrupo(e){
+  e.preventDefault();
+  const nome=$("groupCreateName").value.trim();
+  const erroEl=$("groupCreateError");
+  erroEl.textContent="";
+  if(!nome){erroEl.textContent="Informe um nome para o grupo.";return}
+  const botao=$("groupCreateForm").querySelector('button[type="submit"]');
+  botao.disabled=true;
   try{
     const r=await fetch("/api/app/grupos",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({nome})
     });
-    if(!r.ok){mensagem(await erro(r),"Não foi possível criar o grupo");return}
+    if(!r.ok){erroEl.textContent=await erro(r);return}
     await carregarContexto();
-    renderGrupos();
-    toast("Grupo criado.");
-  }catch(e){
-    console.error("Erro ao criar grupo",e);
-    mensagem("Não foi possível criar o grupo. Tente novamente.");
-  }
+    fecharCamada("groupCreateModal",false);
+    abrirGrupos();
+  }catch(err){
+    console.error("Erro ao criar grupo",err);
+    erroEl.textContent="Não foi possível criar o grupo. Tente novamente.";
+  }finally{botao.disabled=false}
 }
 async function gerarConvite(id){const veioDeMembros=$("membersModal")&&!$("membersModal").classList.contains("hidden");if(veioDeMembros){retornarAoGrupoAposConvite=true;fecharCamada("membersModal",false)}const r=await fetch(`/api/grupos/${id}/convites`,{method:"POST"});if(!r.ok){mensagem(await erro(r),"Não foi possível gerar o convite");return}const x=await r.json(),g=grupos.find(v=>v.id===id);conviteAtual={codigo:x.codigo,grupo:g?.nome||"seu grupo"};$("inviteGeneratedCode").textContent=x.codigo;$("inviteHelp").textContent=`Envie a mensagem abaixo para a pessoa que deseja adicionar ao grupo ${conviteAtual.grupo}. O código é válido por 7 dias e para um único uso.`;$("inviteShareText").value=textoConvite();$("inviteFeedback").textContent="";$("shareInviteButton").style.display="";abrirCamada("inviteGeneratedModal");await copiarConvite(true)}
 async function fecharConviteGerado(){const voltarMembros=retornarAoGrupoAposConvite,grupoId=grupoGerenciado;retornarAoGrupoAposConvite=false;fecharCamada("inviteGeneratedModal",false);if(voltarMembros&&grupoId)await abrirMembros()}
@@ -173,7 +182,28 @@ function selecionarGrupo(id,nome){fecharSubtelasPrincipais();grupoSelecionado=id
 function toggleMenu(force){const s=$("sidebar"),open=force===undefined?!s.classList.contains("open"):force;s.classList.toggle("open",open);$("overlay").classList.toggle("hidden",!open);if(open)registrarCamada()}
 function abrirVisao(){fecharSubtelasPrincipais("viewModal");toggleMenu(false);$("viewContent").innerHTML=`<button class="selection-item" onclick="selecionarVisaoGeral();fecharCamada('viewModal',false)"><strong>Visão geral</strong><span>Todas as contas que você pode visualizar</span></button>`+contas.map(c=>`<button class="selection-item" onclick="selecionarConta(${c.id},'${js(c.nome)}');fecharCamada('viewModal',false)"><strong>${escaparHtml(c.nome)}</strong><span>${c.propria?(c.grupos.length?'Compartilhada':'Privada'):'Compartilhada comigo'}</span></button>`).join("");abrirCamada("viewModal")}
 function abrirGrupos(){fecharSubtelasPrincipais("groupsModal");toggleMenu(false);renderGrupos();abrirCamada("groupsModal")}
-function renderGrupos(){$("groupsContent").innerHTML=grupos.length?grupos.map(g=>`<button type="button" class="selection-item luvi-mobile-list-item" data-open-group="${g.id}"><span class="luvi-list-main"><strong>${escaparHtml(g.nome)}</strong><small>${g.perfil==='ADMIN'?'Administrador':'Membro'}</small></span><svg class="luvi-list-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`).join(""):'<div class="empty-state">Você ainda não participa de grupos.</div>'}
+function renderGrupos(){
+  $("groupsContent").innerHTML=grupos.length?grupos.map(g=>`
+    <div class="luvi-group-row ${g.ativo===false?'luvi-group-inactive':''}">
+      <button type="button" class="selection-item luvi-group-open" data-open-group="${g.id}">
+        <span class="luvi-list-main"><strong>${escaparHtml(g.nome)}</strong>
+        <small>${g.perfil==='ADMIN'?'Administrador':'Membro'} · ${g.ativo===false?'Inativo':'Ativo'}</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      ${g.proprietario?`<label class="luvi-switch" title="${g.ativo===false?'Ativar':'Inativar'} grupo">
+        <input type="checkbox" aria-label="Grupo ${escaparHtml(g.nome)} ativo" data-group-status="${g.id}" ${g.ativo!==false?'checked':''}>
+        <span class="luvi-switch-track"></span></label>`:''}
+    </div>`).join(""):'<div class="empty-state">Você ainda não participa de grupos.</div>';
+  $("groupsContent").querySelectorAll("[data-group-status]").forEach(input=>input.addEventListener("change",async()=>{
+    const id=Number(input.dataset.groupStatus),ativo=input.checked;
+    input.disabled=true;
+    try{
+      const r=await fetch(`/api/app/grupos/${id}/status`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({ativo})});
+      if(!r.ok)throw new Error(await erro(r));
+      await carregarContexto();renderGrupos();
+    }catch(e){input.checked=!ativo;await mensagem(e.message||"Não foi possível alterar o grupo.");input.disabled=false;}
+  }));
+}
 async function alterarCompartilhamento(cid,gid,marcar,el){el.disabled=true;const r=await fetch(`/api/app/contas/${cid}/grupos/${gid}`,{method:marcar?"POST":"DELETE"});if(!r.ok){el.checked=!marcar;await mensagem(await erro(r),"Não foi possível alterar o compartilhamento")}else await carregarContexto();el.disabled=false}
 async function usarCodigoConvite(){
   const codigo=$("inviteCodeInput").value.trim().toUpperCase();
@@ -238,19 +268,19 @@ async function salvarLancamento(e){e.preventDefault();const id=$("lancamentoId")
   await carregarDadosMes();
   if(!id){requestAnimationFrame(()=>document.querySelector(".table-card")?.scrollIntoView({behavior:"smooth",block:"start"}));}}
 function abrirTransferencia(){if(contas.length<2){mensagem("Você precisa ter acesso a pelo menos duas contas.");return}const padrao=contaPadrao();if(padrao)$("transferOrigem").value=padrao;$("transferValor").value="";$("transferData").value=hojeISO();$("transferDescricao").value="Transferência";$("transferError").textContent="";abrirCamada("transferModal")}
-async function salvarTransferencia(e){e.preventDefault();const d={origemId:+$("transferOrigem").value,destinoId:+$("transferDestino").value,valor:+$("transferValor").value,data:$("transferData").value,descricao:$("transferDescricao").value};const r=await fetch("/api/transferencias",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok){$("transferError").textContent=await erro(r);return}localStorage.setItem("luvi.ultimaConta",String(d.origemId));fecharCamada("transferModal",false);await carregarDadosMes();toast("Transferência realizada.")}
+async function salvarTransferencia(e){e.preventDefault();const d={origemId:+$("transferOrigem").value,destinoId:+$("transferDestino").value,valor:+$("transferValor").value,data:$("transferData").value,descricao:$("transferDescricao").value};const r=await fetch("/api/transferencias",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!r.ok){$("transferError").textContent=await erro(r);return}localStorage.setItem("luvi.ultimaConta",String(d.origemId));fecharCamada("transferModal",false);await carregarDadosMes();window.scrollTo({top:0,behavior:"smooth"})}
 async function excluirLancamento(id){if(!await confirmar("Deseja realmente excluir este lançamento?"))return;const r=await fetch(`/api/lancamentos/${id}`,{method:"DELETE"});if(r.ok){await carregarDadosMes();toast("Lançamento excluído.")}else mensagem(await erro(r))}
 async function excluirTransferencia(id){if(!await confirmar("Deseja realmente excluir esta transferência?"))return;const r=await fetch(`/api/transferencias/${id}`,{method:"DELETE"});if(r.ok){await carregarDadosMes();toast("Transferência excluída.")}else mensagem(await erro(r))}
 
 let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){const r=messageResolver;messageResolver=null;if(r)r(v);fecharCamada("messageModal",false)}
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
-function fecharSubtelasPrincipais(excecao=null){["categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
+function fecharSubtelasPrincipais(excecao=null){["categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
 function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}
 function sincronizarCamadas(){const temModal=modais().length>0;document.body.classList.toggle("modal-open",temModal)}
-function fecharTopo(){const abertos=modais().sort((a,b)=>(+(b.dataset.openOrder||0))-(+(a.dataset.openOrder||0)));if(abertos.length){const id=abertos[0].id;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)abrirGrupo(grupoGerenciado);return true}if(id==="shareAccountModal"){fecharCamada(id);abrirContas();return true}if(id==="accountEditModal"){fecharCamada(id,false);abrirContas();return true}if(id==="categoryEditModal"){fecharCamada(id,false);abrirCategorias();return true}if(id==="inviteGeneratedModal"){fecharConviteGerado();return true}return fecharCamada(id);}if($("usuarioDropdown")&&!$("usuarioDropdown").classList.contains("hidden")){ $("usuarioDropdown").classList.add("hidden");$("usuarioMenuButton").setAttribute("aria-expanded","false");return true}if($("sidebar").classList.contains("open")){toggleMenu(false);return true}return false}
+function fecharTopo(){const abertos=modais().sort((a,b)=>(+(b.dataset.openOrder||0))-(+(a.dataset.openOrder||0)));if(abertos.length){const id=abertos[0].id;if(id==="membersModal"){fecharCamada(id);if(grupoGerenciado)abrirGrupo(grupoGerenciado);return true}if(id==="shareAccountModal"){fecharCamada(id);abrirContas();return true}if(id==="groupCreateModal"){fecharCamada(id,false);abrirGrupos();return true}if(id==="accountEditModal"){fecharCamada(id,false);abrirContas();return true}if(id==="categoryEditModal"){fecharCamada(id,false);abrirCategorias();return true}if(id==="inviteGeneratedModal"){fecharConviteGerado();return true}return fecharCamada(id);}if($("usuarioDropdown")&&!$("usuarioDropdown").classList.contains("hidden")){ $("usuarioDropdown").classList.add("hidden");$("usuarioMenuButton").setAttribute("aria-expanded","false");return true}if($("sidebar").classList.contains("open")){toggleMenu(false);return true}return false}
 // v6.1.10: cada abertura real de tela cria uma entrada do navegador.
 // O retorno de uma subtela restaura a tela anterior SEM criar outra entrada.
 // Isso resolve o caso Início > Categorias > Nova categoria > Categorias > Início.

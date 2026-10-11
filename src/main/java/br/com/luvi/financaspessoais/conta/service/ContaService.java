@@ -57,6 +57,7 @@ public class ContaService {
     @Transactional public void compartilhar(Long cid,Long gid,Usuario u){
         if(!ehProprietario(cid,u)) throw new SecurityException("Somente o proprietário pode compartilhar a conta.");
         var m=membros.findByGrupoIdAndUsuarioId(gid,u.getId()).orElseThrow(()->new SecurityException("Você precisa ser membro do grupo para compartilhar sua conta."));
+        if(!m.getGrupo().isAtivo())throw new IllegalStateException("Grupo inativo. Reative-o para compartilhar contas.");
         var atuais=vinculos.findByContaId(cid);
         if(atuais.stream().anyMatch(v->!v.getGrupo().getId().equals(gid))) throw new IllegalStateException("Uma conta pode ser compartilhada com apenas um grupo. Remova o compartilhamento atual antes de escolher outro grupo.");
         if(!vinculos.existsByContaIdAndGrupoId(cid,gid)){ ContaGrupo x=new ContaGrupo(); x.setConta(contas.findById(cid).orElseThrow()); x.setGrupo(m.getGrupo()); vinculos.save(x); }

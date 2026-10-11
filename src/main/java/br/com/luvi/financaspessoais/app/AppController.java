@@ -22,13 +22,20 @@ public class AppController {
             var gids=cg.findByContaId(c.getId()).stream().map(x->x.getGrupo().getId()).filter(meusGids::contains).toList();
             return Map.<String,Object>of("id",c.getId(),"nome",c.getNome(),"tipo",c.getTipo(),"proprietario",c.getProprietario().getNome(),"propria",c.getProprietario().getId().equals(u.getId()),"grupos",gids);
         }).toList();
-        var grupos=gs.meus(u).stream().map(m->Map.<String,Object>of("id",m.getGrupo().getId(),"nome",m.getGrupo().getNome(),"perfil",m.getPerfil().name())).toList();
+        var grupos=gs.meus(u).stream().map(m->Map.<String,Object>of("id",m.getGrupo().getId(),"nome",m.getGrupo().getNome(),"perfil",m.getPerfil().name(),"ativo",m.getGrupo().isAtivo(),"proprietario",m.getGrupo().getCriadoPor().getId().equals(u.getId()))).toList();
         return Map.of("usuario",Map.of("id",u.getId(),"nome",u.getNome(),"login",u.getLogin()),"contas",contas,"grupos",grupos);
     }
     @PostMapping("/contas") public Map<String,Object> criarConta(@RequestBody Map<String,String>b,Authentication a){var c=cs.criar(b.get("nome"),b.get("tipo"),us.atual(a.getName()));return Map.of("id",c.getId(),"nome",c.getNome());}
     @PutMapping("/contas/{id}") public Map<String,Object> alterarConta(@PathVariable Long id,@RequestBody Map<String,String>b,Authentication a){var c=cs.alterar(id,b.get("nome"),b.get("tipo"),us.atual(a.getName()));return Map.of("id",c.getId(),"nome",c.getNome());}
     @DeleteMapping("/contas/{id}") public void excluirConta(@PathVariable Long id,Authentication a){cs.excluir(id,us.atual(a.getName()));}
     @PostMapping("/grupos") public Map<String,Object> criarGrupo(@RequestBody Map<String,String>b,Authentication a){var g=gs.criar(b.get("nome"),us.atual(a.getName()));return Map.of("id",g.getId(),"nome",g.getNome());}
+    @PatchMapping("/grupos/{gid}/status")
+    public Map<String,Object> alterarStatus(@PathVariable Long gid,@RequestBody Map<String,Boolean> b,Authentication a){
+        Boolean ativo=b.get("ativo");
+        if(ativo==null)throw new IllegalArgumentException("Informe o status do grupo.");
+        var g=gs.alterarStatus(gid,ativo,us.atual(a.getName()));
+        return Map.of("id",g.getId(),"ativo",g.isAtivo());
+    }
     @PostMapping("/contas/{cid}/grupos/{gid}") public void compartilhar(@PathVariable Long cid,@PathVariable Long gid,Authentication a){cs.compartilhar(cid,gid,us.atual(a.getName()));}
     @DeleteMapping("/contas/{cid}/grupos/{gid}") public void descompartilhar(@PathVariable Long cid,@PathVariable Long gid,Authentication a){cs.descompartilhar(cid,gid,us.atual(a.getName()));}
     @GetMapping("/grupos/{gid}/membros") public List<Map<String,Object>> membros(@PathVariable Long gid,Authentication a){return gs.membros(gid,us.atual(a.getName())).stream().map(m->Map.<String,Object>of("id",m.getUsuario().getId(),"nome",m.getUsuario().getNome(),"perfil",m.getPerfil().name())).toList();}

@@ -41,6 +41,7 @@ public class ConviteController {
     public Map<String, String> gerar(@PathVariable Long id, Authentication authentication) {
         var usuario = usuarios.atual(authentication.getName());
         var membro = membros.findByGrupoIdAndUsuarioId(id, usuario.getId()).orElseThrow();
+        if (!membro.getGrupo().isAtivo()) throw new IllegalStateException("Grupo inativo.");
         if (membro.getPerfil() != PerfilGrupo.ADMIN) {
             throw new SecurityException("Somente administrador pode convidar.");
         }
