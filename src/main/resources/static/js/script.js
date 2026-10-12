@@ -445,6 +445,15 @@ function luviDashboardOpen(view){
  const chartOptions={responsive:true,maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${luviDashMoney(c.raw)}`}}}};
  if(type==='doughnut'){chartOptions.plugins.legend={position:'bottom',labels:{boxWidth:12,padding:14}};chartOptions.cutout='48%';}
  else{chartOptions.scales={y:{ticks:{callback:v=>luviDashMoney(v)}}};}
+ // LUVI v6.8.5: cores semânticas suaves para faturas (azul = pagas; rosa = em aberto).
+ if(view==='cards'){
+   datasets=datasets.map(ds=>({
+     ...ds,
+     backgroundColor:ds.label==='Pagas'?'rgba(147, 197, 253, 0.85)':'rgba(253, 164, 175, 0.85)',
+     borderColor:ds.label==='Pagas'?'rgba(96, 165, 250, 1)':'rgba(251, 113, 133, 1)',
+     borderWidth:1
+   }));
+ }
  luviDashChart=new Chart($('luviDashboardAnalysisChart'),{type,data:{labels,datasets},options:chartOptions});
  }catch(e){console.error('Erro ao renderizar análise do Dashboard',e);luviDashboardEmpty('Não foi possível desenhar este gráfico. Consulte o console do navegador para detalhes.');$('luviDashboardDetailFootnote').textContent='Ocorreu um erro de exibição; nenhum dado financeiro foi alterado.';}
 }
