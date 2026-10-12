@@ -1314,3 +1314,83 @@ body{background:var(--luvi-bg)}
   .mobile-bottom-nav{display:none !important}
 }
 @media(max-width:999px){body{padding-left:0}}
+
+/* LUVI 6.5 - Planejamento */
+.luvi-planning-toggle{display:flex;gap:4px;background:#e5edf6;border-radius:14px;padding:5px;margin:12px 0 18px;max-width:420px}
+.luvi-planning-toggle button{flex:1;border:0;border-radius:10px;background:transparent;color:#102F59;font-weight:700;padding:12px 8px;cursor:pointer}
+.luvi-planning-toggle button.luvi-view-selected{background:#fff;box-shadow:0 2px 7px #102f5920}
+.luvi-forecast{background:white;border:1px solid #dce7f1;border-radius:16px;padding:20px;margin:12px 0 24px;box-shadow:0 4px 15px #102f590b}
+.luvi-forecast-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.luvi-forecast-heading h2{color:#102F59;margin:0}.luvi-forecast-heading p{color:#66788b;margin:6px 0 12px}
+.luvi-forecast-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.luvi-forecast-totals>div{background:#f5f8fc;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.luvi-forecast-totals small{color:#5f7081}.luvi-forecast-totals strong{color:#102F59;font-size:1.15rem}
+.luvi-future-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #e8edf3;flex-wrap:wrap}
+.luvi-future-description{display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px}
+.luvi-future-description small{color:#697b8d}.luvi-future-status{background:#fff3df;color:#84550c;border-radius:20px;padding:5px 9px;font-size:.78rem}
+.luvi-future-status.paid{background:#e5f6eb;color:#146e38}.luvi-future-remove{background:none;border:0;color:#b52233;font-size:26px;cursor:pointer}
+.luvi-forecast-note{color:#687b8c;font-size:.82rem;margin-top:14px}
+@media(max-width:600px){.luvi-forecast{padding:13px}.luvi-forecast-totals{grid-template-columns:1fr}.luvi-future-row{gap:8px}.luvi-future-row .secondary-button{padding:8px}}
+
+/* LUVI 6.5.1 - filtro global e ajustes no pagamento */
+.month-navigation{margin:14px 0 18px}
+.luvi-pay-adjustments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.luvi-pay-adjustments>div{min-width:0}
+.luvi-pay-adjustments input{width:100%;box-sizing:border-box}
+@media(max-width:420px){.luvi-pay-adjustments{grid-template-columns:1fr}}
+
+.luvi-parcela-edit{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 0;border-bottom:1px solid #e5edf5}.luvi-parcela-edit label{display:flex;flex-direction:column;gap:5px}.luvi-parcela-edit input{width:100%}@media(max-width:480px){.luvi-parcela-edit{grid-template-columns:1fr}}
+
+/* LUVI 6.7 cartões e faturas */
+.luvi-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.luvi-card-tile{padding:15px;border:1px solid #dbe6f0;border-radius:14px;margin:12px 0;background:#f5f8fc}.luvi-card-tile>small{display:block;color:#62768e;margin:5px 0 10px}.luvi-invoices{display:flex;gap:8px;flex-wrap:wrap}.luvi-invoice-line,.luvi-invoice-total{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #e0e9f2}.luvi-invoice-line small{display:block;color:#64748b}.luvi-invoice-total{font-size:1.15rem}
+
+/* LUVI 6.7.1 — cartões, faturas e pagamentos com áreas delimitadas */
+.luvi-ui-panel{margin:18px 0;padding:18px;border:1px solid #cbdbea;border-radius:16px;background:#f8fbff;box-shadow:0 2px 8px rgba(16,47,89,.04)}
+.luvi-ui-panel>h3{margin:0 0 8px;color:#102f59}
+.luvi-panel-hint{color:#61758b;font-size:.9rem;margin:0 0 14px}
+.luvi-invoice-panel{border:2px solid #9ebfdf;background:#fff}
+.luvi-payment-panel{margin-top:22px;padding:20px;border:2px solid #9dc7b3;border-left:5px solid #27865c;border-radius:14px;background:#f3faf6}
+.luvi-payment-panel h3{margin-top:0;color:#175d40}
+.luvi-payment-panel .luvi-card-actions{padding-top:12px;border-top:1px solid #c8dfd1}
+.luvi-money-input::-webkit-inner-spin-button,.luvi-money-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.luvi-money-input{-moz-appearance:textfield;appearance:textfield}
+@media(max-width:600px){.luvi-ui-panel{padding:12px}.luvi-payment-panel{padding:14px}}
+
+/* LUVI 6.7.2 — cartões compactos e histórico de faturas */
+.luvi-card-summary{display:flex;flex-direction:column;gap:5px;margin:12px 0;padding:12px;background:#fff;border:1px solid #dbe6f0;border-radius:10px}.luvi-card-summary>strong{font-size:1.3rem;color:#102f59}.luvi-card-summary small{color:#62768e}.luvi-invoice-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}.luvi-invoice-filters label{display:flex;flex-direction:column;gap:6px}.luvi-invoice-filters select{width:100%;min-width:0}.luvi-invoice-row{display:flex;width:100%;justify-content:space-between;align-items:center;gap:12px;text-align:left;padding:14px 12px;margin:8px 0;background:#f5f8fc;border:1px solid #dbe6f0;border-radius:12px;color:#102f59;cursor:pointer}.luvi-invoice-row span{display:flex;flex-direction:column;gap:5px}.luvi-invoice-row small{color:#62768e}.luvi-invoice-row>strong{white-space:nowrap}.luvi-card-tile>.secondary-button{margin-top:6px}#luviCardInvoicesView>button,#luviInvoiceDetails>button{margin-bottom:12px}@media(max-width:480px){.luvi-invoice-row{font-size:.92rem}.luvi-invoice-filters{gap:8px}}
+
+/* v6.7.3: seta única no canto superior direito das telas de cartões */
+#luviCardModal .luvi-cards-back{font-size:34px;line-height:1;min-width:42px;min-height:42px;display:flex;align-items:center;justify-content:center;}
+
+/* LUVI 6.8 — navegação consistente e dashboard gerencial */
+.modal-header .close-button{position:relative;flex:0 0 38px;min-width:38px;font-size:0!important;line-height:1;white-space:nowrap}
+.modal-header .close-button::before{content:"‹"!important;display:block;font-size:34px;line-height:38px;text-align:center}
+.modal-header .luvi-cards-back{font-size:0!important}
+.dashboard-summary-v68{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dashboard-summary-v68>div{background:#fff;min-width:0}
+.dashboard-summary-v68 strong{display:block;overflow-wrap:anywhere;color:#102f59}
+.luvi-analysis-heading{margin:28px 0 12px;font-size:18px}
+.luvi-analysis-menu{display:grid;gap:10px}
+.luvi-analysis-menu button{display:flex;align-items:center;gap:16px;width:100%;padding:18px;border:1px solid #dce2e9;border-radius:14px;background:#fff;color:#14273e;text-align:left;cursor:pointer}
+.luvi-analysis-menu button>span:first-child{font-size:24px;flex:0 0 34px;text-align:center;color:#345f8c}
+.luvi-analysis-menu button>span:nth-child(2){flex:1;min-width:0}
+.luvi-analysis-menu strong,.luvi-analysis-menu small{display:block}
+.luvi-analysis-menu small{margin-top:5px;color:#667789;font-size:13px}
+.luvi-analysis-menu b{font-size:27px;font-weight:400;color:#6b7280}
+.luvi-dashboard-chart{position:relative;height:340px;min-height:260px;margin:20px 0;border:1px solid #e1e6ed;border-radius:14px;padding:12px;background:#fff}
+.luvi-dashboard-detail-total{font-size:19px;font-weight:700;color:#102f59;margin-top:12px}
+@media(max-width:700px){.dashboard-summary-v68{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-summary-v68 strong{font-size:17px}.dashboard-summary-v68>div{padding:12px}.luvi-analysis-menu button{padding:14px 12px}.luvi-dashboard-chart{height:300px}}
+
+/* LUVI v6.8.2 - estados e alternativa local para gráfico de categorias */
+.luvi-dashboard-empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;margin:0;text-align:center;color:#607184;padding:20px}
+.luvi-dashboard-pie-fallback{display:flex;align-items:center;justify-content:center;gap:22px;height:100%;overflow:auto}
+.luvi-dashboard-pie-svg{width:min(260px,48%);height:auto;flex-shrink:0}
+.luvi-dashboard-pie-legend{flex:1;min-width:0;max-height:290px;overflow:auto}
+.luvi-dashboard-pie-legend>div{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px}
+.luvi-dashboard-pie-legend>div span:first-child{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.luvi-dashboard-pie-legend>div span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}
+.luvi-dashboard-pie-legend strong{white-space:nowrap;color:#102f59}
+@media(max-width:600px){.luvi-dashboard-pie-fallback{flex-direction:column;justify-content:flex-start}.luvi-dashboard-pie-svg{width:180px}.luvi-dashboard-pie-legend{width:100%;max-height:140px}}
+
+/* LUVI 6.8.3 - filtros do Dashboard */
+.luvi-dash-filter-row{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:0 0 16px}.luvi-dash-filter-row label,.luvi-dash-card-status{display:flex;flex-direction:column;gap:5px;font-size:14px;color:#34435a}.luvi-dash-filter-row input,.luvi-dash-card-status select{padding:10px;border:1px solid #cbd5e1;border-radius:8px;max-width:190px}.luvi-dash-card-status{margin-bottom:16px}

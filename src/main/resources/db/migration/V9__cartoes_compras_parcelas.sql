@@ -1,0 +1,3 @@
+CREATE TABLE cartoes_credito (id BIGSERIAL PRIMARY KEY,nome VARCHAR(120) NOT NULL,conta_pagamento_id BIGINT NOT NULL REFERENCES contas_financeiras(id),fechamento INTEGER NOT NULL,vencimento INTEGER NOT NULL,limite_credito NUMERIC(12,2));
+CREATE TABLE compras_cartao (id BIGSERIAL PRIMARY KEY,cartao_id BIGINT NOT NULL REFERENCES cartoes_credito(id),descricao VARCHAR(200) NOT NULL,data_compra DATE NOT NULL,total NUMERIC(12,2) NOT NULL,quantidade_parcelas INTEGER NOT NULL);
+CREATE TABLE parcelas_cartao (id BIGSERIAL PRIMARY KEY,compra_id BIGINT NOT NULL REFERENCES compras_cartao(id),numero INTEGER NOT NULL,compromisso_id BIGINT NOT NULL UNIQUE REFERENCES compromissos_financeiros(id),UNIQUE(compra_id,numero));

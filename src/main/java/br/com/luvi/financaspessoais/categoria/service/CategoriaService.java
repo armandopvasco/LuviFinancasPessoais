@@ -9,6 +9,14 @@ import org.springframework.stereotype.Service; import org.springframework.transa
  private void validarGrupo(Long g,Usuario u){if(!membros.existsByGrupoIdAndUsuarioId(g,u.getId()))throw new SecurityException("Você não participa deste grupo.");}
  @Transactional public List<CategoriaResponse> listar(Long grupoId,Usuario u){garantirPadrao(grupoId,u);return (grupoId==null?repo.findByUsuarioIdOrderByNome(u.getId()):repo.findByGrupoIdOrderByNome(grupoId)).stream().map(CategoriaResponse::from).toList();}
  @Transactional public List<CategoriaResponse> listarPorConta(Long contaId,Usuario u){Long gid=contas.grupoCategorias(contaId,u);return listar(gid,u);}
+ @Transactional public Categoria categoriaPagamentoFatura(Long contaId,Usuario u){
+  Long gid=contas.grupoCategorias(contaId,u);
+  var lista=gid==null?repo.findByUsuarioIdOrderByNome(u.getId()):repo.findByGrupoIdOrderByNome(gid);
+  for(var c:lista)if("Pagamento de fatura".equalsIgnoreCase(c.getNome())&&c.getTipo()==TipoLancamento.DESPESA)return c;
+  var c=new Categoria();c.setNome("Pagamento de fatura");c.setTipo(TipoLancamento.DESPESA);
+  if(gid==null)c.setUsuario(u);else c.setGrupo(grupos.findById(gid).orElseThrow());
+  return repo.save(c);
+ }
  public void validarParaConta(Categoria c,Long contaId,Usuario u){Long gid=contas.grupoCategorias(contaId,u);if(gid==null){if(c.getGrupo()!=null||c.getUsuario()==null||!c.getUsuario().getId().equals(u.getId()))throw new IllegalStateException("Conta privada aceita somente categorias pessoais.");}else if(c.getGrupo()==null||!gid.equals(c.getGrupo().getId()))throw new IllegalStateException("A categoria selecionada não pertence ao grupo desta conta.");}
  @Transactional public CategoriaResponse criar(CategoriaRequest r,Usuario u){Categoria c=new Categoria();aplicar(c,r,u,true);return CategoriaResponse.from(repo.save(c));}
  @Transactional public CategoriaResponse atualizar(Long id,CategoriaRequest r,Usuario u){Categoria c=repo.findById(id).orElseThrow();validarDono(c,u);aplicar(c,r,u,false);return CategoriaResponse.from(repo.save(c));}
