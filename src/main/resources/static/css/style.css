@@ -1394,3 +1394,12 @@ body{background:var(--luvi-bg)}
 
 /* LUVI 6.8.3 - filtros do Dashboard */
 .luvi-dash-filter-row{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:0 0 16px}.luvi-dash-filter-row label,.luvi-dash-card-status{display:flex;flex-direction:column;gap:5px;font-size:14px;color:#34435a}.luvi-dash-filter-row input,.luvi-dash-card-status select{padding:10px;border:1px solid #cbd5e1;border-radius:8px;max-width:190px}.luvi-dash-card-status{margin-bottom:16px}
+
+/* LUVI 6.8.6: filtros consistentes com os formulários mobile */
+.luvi-invoice-filters select,.luvi-dash-card-status select,#luviDashboardFilters select,#luviDashboardFilters input{appearance:auto;display:block;width:100%;min-width:0;min-height:48px;padding:11px 14px;border:1px solid #d0d7df;border-radius:12px;background:#f0f1f3;color:#182d44;font:inherit;box-sizing:border-box}
+.luvi-invoice-filters label,.luvi-dash-card-status{font-weight:500;color:#27384a}
+#luviPurchaseCount{margin-bottom:18px}
+#luviSaveSinglePurchase,#luviPreviewPurchase{margin-top:12px}
+.luvi-repeat-toggle{display:flex;align-items:center;gap:10px;margin-top:16px;cursor:pointer}.luvi-repeat-toggle .switch{flex-shrink:0}.luvi-repeat-toggle .switch input{width:0;height:0;padding:0;margin:0;border:0}
+#luviFutureRepeatOptions{padding:12px 14px;margin:8px 0;border:1px solid #dbe6f0;border-radius:12px;background:#f5f8fc}
+.luvi-future-remove{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:#b52233;font-size:19px}.luvi-future-remove:hover{background:#fff0f1}

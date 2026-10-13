@@ -58,14 +58,17 @@ document.addEventListener("DOMContentLoaded",async()=>{
   });
 
   // Navegação de grupos deve funcionar independentemente das chamadas iniciais.
-  $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal");
+  $("fecharGroups").onclick=()=>fecharCamada("groupsModal");
   $("novoGrupoButton").onclick=abrirCadastroGrupo;
   $("groupCreateForm").onsubmit=criarGrupo;
-  await carregarContexto(); await carregarCategorias(); await carregarDadosMes();
   $("luviViewReal").onclick=()=>alternarVisaoLuvi(false);
   $("luviViewForecast").onclick=()=>alternarVisaoLuvi(true);
   $("luviNewFuture").onclick=abrirCompromissoLuvi;
   $("luviFutureForm").onsubmit=salvarCompromissoLuvi;
+  $("luviEditFutureForm").onsubmit=salvarEdicaoCompromissoLuvi;
+  $("luviEditFutureAccount").onchange=carregarCategoriasEdicaoLuvi;
+  $("luviEditFutureType").onchange=carregarCategoriasEdicaoLuvi;
+  $("luviFutureRepeat").onchange=()=>$("luviFutureRepeatOptions").classList.toggle('hidden',!$("luviFutureRepeat").checked);
   $("luviPayForm").onsubmit=salvarPagamentoLuvi;
   ["luviPayValue","luviPayDiscount","luviPayExtra"].forEach(id=>$(id).addEventListener("input",atualizarCalculoPagamentoLuvi));
   $("luviFutureAccount").onchange=carregarCategoriasCompromissoLuvi;
@@ -87,20 +90,22 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("dashboardMenu").onclick=abrirDashboard; $("contasMenu").onclick=abrirContas; $("categoriasMenu").onclick=abrirCategorias; $("gruposMenu").onclick=abrirGrupos; $("visaoHeaderButton").onclick=abrirVisao;
   $("entrarGrupoMenu").onclick=abrirEntradaConvite;
   $("fecharView").onclick=$("cancelarView").onclick=()=>fecharCamada("viewModal");
-  $("fecharGroups").onclick=$("cancelarGroups").onclick=()=>fecharCamada("groupsModal"); $("novoGrupoButton").onclick=abrirCadastroGrupo;
+  $("fecharGroups").onclick=()=>fecharCamada("groupsModal"); $("novoGrupoButton").onclick=abrirCadastroGrupo;
   $("fecharMembers").onclick=$("cancelarMembers").onclick=async()=>{fecharCamada("membersModal");if(grupoGerenciado)await abrirGrupo(grupoGerenciado)}; $("membersInviteButton").onclick=()=>{if(grupoGerenciado)gerarConvite(grupoGerenciado)};
   $("fecharShareAccount").onclick=$("cancelarShareAccount").onclick=()=>{fecharCamada("shareAccountModal");abrirContas()};
   $("usuarioMenuButton").onclick=e=>{e.stopPropagation();const aberto=$("usuarioDropdown").classList.toggle("hidden")===false;$("usuarioMenuButton").setAttribute("aria-expanded",String(aberto))}; document.addEventListener("click",e=>{if(!e.target.closest(".user-menu-wrap")){ $("usuarioDropdown").classList.add("hidden"); $("usuarioMenuButton").setAttribute("aria-expanded","false") }});
   $("fecharInviteCode").onclick=$("cancelarInviteCode").onclick=()=>fecharCamada("inviteCodeModal");
   $("abrirInviteCode").onclick=usarCodigoConvite; $("pasteInviteButton").onclick=colarConvite;
-  $("fecharGroup").onclick=$("cancelarGroup").onclick=()=>fecharCamada("groupModal");
+  $("fecharGroup").onclick=()=>fecharCamada("groupModal");
   $("groupMembersButton").onclick=abrirMembros;
-  $("fecharAccounts").onclick=$("cancelarAccounts").onclick=()=>fecharCamada("accountsModal"); $("fecharCategories").onclick=$("cancelarCategories").onclick=()=>fecharCamada("categoriesModal"); $("novaCategoriaButton").onclick=()=>abrirEdicaoCategoria(); $("categoryForm").onsubmit=salvarCategoria; $("fecharCategoryEdit").onclick=$("cancelarCategoryEdit").onclick=async()=>{fecharCamada("categoryEditModal",false);await abrirCategorias()}; $("fecharDashboard").onclick=luviDashboardBack;
+  $("fecharAccounts").onclick=()=>fecharCamada("accountsModal"); $("fecharCategories").onclick=()=>fecharCamada("categoriesModal"); $("novaCategoriaButton").onclick=()=>abrirEdicaoCategoria(); $("categoryForm").onsubmit=salvarCategoria; $("fecharCategoryEdit").onclick=$("cancelarCategoryEdit").onclick=async()=>{fecharCamada("categoryEditModal",false);await abrirCategorias()}; $("fecharDashboard").onclick=luviDashboardBack;
   $("novaContaButton").onclick=()=>abrirEdicaoConta(); $("accountForm").onsubmit=salvarConta;
   $("fecharAccountEdit").onclick=$("cancelarAccountEdit").onclick=()=>{fecharCamada("accountEditModal",false);abrirContas()};
   $("copyInviteButton").onclick=()=>copiarConvite(false);
   $("fecharMessage").onclick=$("messageCancel").onclick=()=>resolverMensagem(false); $("messageOk").onclick=()=>resolverMensagem(true);
   window.luviLayerOrder=window.luviLayerOrder||0;
+  try { await carregarContexto(); await carregarCategorias(); await carregarDadosMes(); }
+  catch (e) { console.error("Falha ao carregar os dados iniciais", e); await mensagem("Não foi possível carregar os dados. Atualize a página para tentar novamente."); }
 });
 
 function marcarNavMobile(alvo){const mapa={home:"mobileNavHome",dashboard:"mobileNavDashboard",more:"mobileNavMore"};Object.values(mapa).forEach(id=>$(id)?.classList.remove("active"));$(mapa[alvo])?.classList.add("active")}
@@ -501,13 +506,14 @@ function renderizarCompromissosLuvi(){
  $("luviFutureIncome").textContent=formatarMoeda(receitas);
  $("luviFutureExpense").textContent=formatarMoeda(despesas);
  $("luviFutureBalance").textContent=formatarMoeda(saldoReal+receitas-despesas);
- $("luviFutureRows").innerHTML=luviCompromissos.length?luviCompromissos.map(x=>`<div class="luvi-future-row"><div class="luvi-future-description"><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)} · ${escaparHtml(x.categoria)}${x.status==='PAGO'&&x.dataPagamento?` · Realizado em ${formatarData(x.dataPagamento)}${x.valorEfetivo!=null?` por ${formatarMoeda(Number(x.valorEfetivo))}`:''}`:''}</small></div><span class="${x.tipo==='RECEITA'?'valor-receita':'valor-despesa'}">${x.tipo==='RECEITA'?'+':'−'} ${formatarMoeda(Number(x.valor))}</span><span class="luvi-future-status ${x.status==='PAGO'?'paid':''}">${x.status==='PAGO'?(x.dataPagamento&&x.dataPagamento<x.vencimento?'Pago antecipadamente':'Pago'):'Pendente'}</span>${x.status==='PENDENTE'?`<button type="button" class="secondary-button" data-future-pay="${x.id}">${x.cartaoId?'Ver fatura':x.tipo==='RECEITA'?'Receber':'Pagar'}</button><button type="button" class="luvi-future-remove" data-future-delete="${x.id}" aria-label="Excluir compromisso">×</button>`:''}</div>`).join(''):'<div class="empty-state">Nenhum compromisso neste mês. Cadastre um lançamento futuro.</div>';
+ $("luviFutureRows").innerHTML=luviCompromissos.length?luviCompromissos.map(x=>`<div class="luvi-future-row"><div class="luvi-future-description"><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)} · ${escaparHtml(x.categoria)}${x.status==='PAGO'&&x.dataPagamento?` · Realizado em ${formatarData(x.dataPagamento)}${x.valorEfetivo!=null?` por ${formatarMoeda(Number(x.valorEfetivo))}`:''}`:''}</small></div><span class="${x.tipo==='RECEITA'?'valor-receita':'valor-despesa'}">${x.tipo==='RECEITA'?'+':'−'} ${formatarMoeda(Number(x.valor))}</span><span class="luvi-future-status ${x.status==='PAGO'?'paid':''}">${x.status==='PAGO'?(x.dataPagamento&&x.dataPagamento<x.vencimento?'Pago antecipadamente':'Pago'):'Pendente'}</span>${x.status==='PENDENTE'?`<button type="button" class="secondary-button" data-future-pay="${x.id}">${x.cartaoId?'Ver fatura':x.tipo==='RECEITA'?'Receber':'Pagar'}</button>${x.cartaoId?'':`<button type="button" class="icon-action editar" data-future-edit="${x.id}" aria-label="Editar compromisso" title="Editar compromisso">${icone("editar")}</button>`}<button type="button" class="icon-action excluir" data-future-delete="${x.id}" aria-label="Excluir compromisso" title="Excluir compromisso">${icone("excluir")}</button>`:''}</div>`).join(''):'<div class="empty-state">Nenhum compromisso neste mês. Cadastre um lançamento futuro.</div>';
  $("luviFutureRows").querySelectorAll('[data-future-pay]').forEach(b=>b.onclick=()=>{const id=b.dataset.futurePay;const c=luviCompromissos.find(x=>String(x.id)===id);if(c?.cartaoId){luviOpenCards().then(()=>luviOpenInvoice(`${c.cartaoId}|${c.competencia}`));}else pagarCompromissoLuvi(Number(id));});
+ $("luviFutureRows").querySelectorAll('[data-future-edit]').forEach(b=>b.onclick=()=>abrirEdicaoCompromissoLuvi(Number(b.dataset.futureEdit)));
  $("luviFutureRows").querySelectorAll('[data-future-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.futureDelete;const c=luviCompromissos.find(x=>String(x.id)===id);if(c?.cartaoId){luviOpenCards().then(()=>luviOpenInvoice(`${c.cartaoId}|${c.competencia}`));}else excluirCompromissoLuvi(Number(id));});
 }
 async function abrirCompromissoLuvi(){
  if(!contas.length){await mensagem('Cadastre uma conta financeira antes.');return;}
- $("luviFutureForm").reset();$("luviFutureError").textContent='';
+ $("luviFutureForm").reset();$("luviFutureRepeatOptions").classList.add("hidden");$("luviFutureError").textContent='';
  $("luviFutureAccount").innerHTML=contas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
  $("luviFutureAccount").value=contaPadrao();$("luviFutureDate").value=hojeISO();
  await carregarCategoriasCompromissoLuvi();abrirCamada('luviFutureModal');
@@ -521,7 +527,7 @@ async function carregarCategoriasCompromissoLuvi(){
  $("luviFutureCategory").innerHTML=cats.filter(c=>c.tipo===tipo && c.ativa!==false).map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
 }
 async function salvarCompromissoLuvi(e){
- e.preventDefault();const d={contaId:Number($("luviFutureAccount").value),tipo:$("luviFutureType").value,descricao:$("luviFutureDescription").value,categoriaId:Number($("luviFutureCategory").value),valor:Number($("luviFutureValue").value),vencimento:$("luviFutureDate").value};
+ e.preventDefault();const d={contaId:Number($("luviFutureAccount").value),tipo:$("luviFutureType").value,descricao:$("luviFutureDescription").value,categoriaId:Number($("luviFutureCategory").value),valor:Number($("luviFutureValue").value),vencimento:$("luviFutureDate").value,quantidadeOcorrencias:$("luviFutureRepeat").checked?Number($("luviFutureOccurrences").value):1,frequencia:$("luviFutureRepeat").checked?$("luviFutureFrequency").value:"MENSAL"};
  const r=await fetch('/api/planejamento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
  if(!r.ok){$("luviFutureError").textContent=await erro(r);return;}
  fecharCamada('luviFutureModal',false);await carregarCompromissosLuvi();
@@ -553,11 +559,37 @@ async function salvarPagamentoLuvi(e){
  catch(ex){$("luviPayError").textContent=ex.message||'Erro ao registrar pagamento.';}
  finally{botao.disabled=false;}
 }
+async function carregarCategoriasEdicaoLuvi(){
+ const id=$("luviEditFutureAccount").value,tipo=$("luviEditFutureType").value;
+ if(!id)return;const r=await fetch(`/api/categorias?contaId=${encodeURIComponent(id)}`);
+ if(!r.ok){$("luviEditFutureError").textContent=await erro(r);return;}
+ const cats=await r.json();$("luviEditFutureCategory").innerHTML=cats.filter(c=>c.tipo===tipo&&c.ativa!==false).map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
+}
+async function abrirEdicaoCompromissoLuvi(id){
+ const c=luviCompromissos.find(x=>x.id===id);if(!c||c.status!=='PENDENTE'||c.cartaoId)return;
+ $("luviEditFutureError").textContent='';$("luviEditFutureId").value=id;
+ $("luviEditFutureAccount").innerHTML=contas.map(x=>`<option value="${x.id}">${escaparHtml(x.nome)}</option>`).join('');
+ $("luviEditFutureAccount").value=c.contaId;$("luviEditFutureType").value=c.tipo;
+ $("luviEditFutureDescription").value=c.descricao;$("luviEditFutureValue").value=Number(c.valor).toFixed(2);$("luviEditFutureDate").value=c.vencimento;
+ $("luviEditFutureScope").value='ATUAL';$("luviEditFutureScope").disabled=!c.serieRecorrencia;
+ await carregarCategoriasEdicaoLuvi();$("luviEditFutureCategory").value=c.categoriaId;abrirCamada('luviEditFutureModal');
+}
+async function salvarEdicaoCompromissoLuvi(e){
+ e.preventDefault();const id=Number($("luviEditFutureId").value);
+ const d={contaId:Number($("luviEditFutureAccount").value),tipo:$("luviEditFutureType").value,descricao:$("luviEditFutureDescription").value,categoriaId:Number($("luviEditFutureCategory").value),valor:Number($("luviEditFutureValue").value),vencimento:$("luviEditFutureDate").value,alcance:$("luviEditFutureScope").value};
+ const b=$("luviEditFutureForm").querySelector('button[type="submit"]');b.disabled=true;
+ try{const r=await fetch(`/api/planejamento/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await erro(r));fecharCamada('luviEditFutureModal',false);await carregarDadosMes();}
+ catch(ex){$("luviEditFutureError").textContent=ex.message||'Não foi possível editar.';}finally{b.disabled=false;}
+}
 async function excluirCompromissoLuvi(id){
- if(!await confirmar('Excluir este compromisso pendente?'))return;
- const r=await fetch(`/api/planejamento/${id}`,{method:'DELETE'});
+ const c=luviCompromissos.find(x=>x.id===id);if(!c||c.status!=='PENDENTE')return;
+ let futuras=false;
+ if(c.serieRecorrencia){futuras=await confirmar('Excluir esta ocorrência e as próximas pendentes? Clique em Cancelar para escolher excluir somente esta.');
+ if(!futuras && !await confirmar('Excluir somente esta ocorrência pendente?'))return;
+ }else if(!await confirmar('Excluir este compromisso pendente?'))return;
+ const r=await fetch(`/api/planejamento/${id}${futuras?'/proximas':''}`,{method:'DELETE'});
  if(!r.ok){await mensagem(await erro(r));return;}
- await carregarCompromissosLuvi();
+ await carregarDadosMes();
 }
 
 // LUVI 6.6: cartões e pré-visualização das parcelas antes da gravação.
@@ -611,10 +643,10 @@ $('luviCardsHeaderBack')?.addEventListener('click',luviCardsBack);
 
 let luviInvoiceSelected=null;
 async function luviOpenInvoice(key){const [cardId,competencia]=key.split('|');const card=luviCards.find(x=>x.id===Number(cardId));const r=await fetch(`/api/cartoes/${cardId}/faturas`);if(!r.ok){await mensagem(await erro(r));return;}const f=(await r.json()).find(x=>x.competencia===competencia);if(!f)return;luviSelectedCard=card;luviInvoiceSelected={card,f};luviCardSection('luviInvoiceDetails');$('luviInvoiceTitle').textContent=`Fatura ${card.nome} · ${competencia.slice(0,7).split('-').reverse().join('/')}`;$('luviInvoiceItems').innerHTML=f.itens.map(x=>`<div class="luvi-invoice-line"><span>${escaparHtml(x.descricao)} (${x.numero}/${x.quantidade})<small>${escaparHtml(x.categoria)}</small></span><strong>${formatarMoeda(Number(x.valor))}</strong></div>`).join('')+`<div class="luvi-invoice-total"><strong>Total</strong><strong>${formatarMoeda(Number(f.total))}</strong></div>`+(f.paga?'<p>Fatura paga.</p>':'');$('luviInvoicePayForm').classList.toggle('hidden',f.paga);$('luviInvoiceAccount').innerHTML=contas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');$('luviInvoiceAccount').value=String(card.contaPagamentoId||contas[0]?.id||'');$('luviInvoiceDate').value=hojeISO();$('luviInvoiceValue').value=Number(f.total).toFixed(2);$('luviInvoiceError').textContent='';}
-async function luviOpenCards(){try{await luviLoadCards();$('luviCardAccount').innerHTML='<option value="">Sem conta padrão</option>'+contas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');$('luviPurchaseCategory').innerHTML=categorias.filter(c=>c.tipo==='DESPESA'&&c.ativa!==false).map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');$('luviPurchaseDate').value=hojeISO();luviCardSection('','reset');abrirCamada('luviCardModal');}catch(e){await mensagem(e.message);}}
+async function luviOpenCards(){try{await luviLoadCards();$('luviCardAccount').innerHTML='<option value="">Sem conta padrão</option>'+contas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');await luviLoadPurchaseCategories();$('luviPurchaseDate').value=hojeISO();luviCardSection('','reset');abrirCamada('luviCardModal');}catch(e){await mensagem(e.message);}}
 $('cartoesMenu')?.addEventListener('click',()=>{toggleMenu(false);luviOpenCards();});
 $('luviShowNewCard')?.addEventListener('click',()=>luviCardSection('luviCardFormWrap'));
-$('luviShowNewPurchase')?.addEventListener('click',()=>{luviCardSection('luviPurchaseFormWrap');luviUpdatePurchaseMode();});
+$('luviShowNewPurchase')?.addEventListener('click',async()=>{luviCardSection('luviPurchaseFormWrap');luviUpdatePurchaseMode();await luviLoadPurchaseCategories();});
 $('luviCancelCard')?.addEventListener('click',luviCardsBack);
 $('luviInvoiceCancel')?.addEventListener('click',luviCardsBack);
 function luviUpdatePurchaseMode(){const n=Number($('luviPurchaseCount').value);const parcelado=Number.isInteger(n)&&n>1;$('luviPreviewPurchase').classList.toggle('hidden',!parcelado);$('luviSaveSinglePurchase').classList.toggle('hidden',parcelado);$('luviPurchasePreview').classList.add('hidden');$('luviPurchaseInstallments').innerHTML='';luviDraft=[];$('luviPurchaseError').textContent='';}
@@ -630,3 +662,21 @@ $('luviPurchaseForm')?.addEventListener('submit',async e=>{e.preventDefault();if
 
 // v6.7.2: ao navegar pelo menu móvel, recolher a gaveta antes de abrir o destino.
 $('sidebar')?.addEventListener('click',event=>{if(event.target.closest('button.nav-item'))toggleMenu(false);});
+
+// Categorias próprias do escopo do cartão, sem depender do formulário de lançamentos.
+let luviPurchaseCategoryRequest=0;
+async function luviLoadPurchaseCategories(){
+ const request=++luviPurchaseCategoryRequest, select=$('luviPurchaseCategory'), cardId=$('luviPurchaseCard').value;
+ select.disabled=true;select.innerHTML='<option value="">Carregando categorias...</option>';
+ try{
+  if(!cardId){select.innerHTML='<option value="">Cadastre ou selecione um cartão</option>';return;}
+  const r=await fetch(`/api/cartoes/${encodeURIComponent(cardId)}/categorias`);
+  if(!r.ok)throw new Error(await erro(r));
+  const lista=(await r.json()).filter(c=>c.tipo==='DESPESA'&&c.ativa!==false);
+  if(request!==luviPurchaseCategoryRequest)return;
+  select.innerHTML=lista.length?lista.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join(''):'<option value="">Nenhuma categoria de despesa ativa</option>';
+  $('luviPurchaseError').textContent='';
+ }catch(e){if(request===luviPurchaseCategoryRequest){select.innerHTML='<option value="">Não foi possível carregar categorias</option>';$('luviPurchaseError').textContent=e.message;}}
+ finally{if(request===luviPurchaseCategoryRequest)select.disabled=false;}
+}
+$('luviPurchaseCard')?.addEventListener('change',luviLoadPurchaseCategories);

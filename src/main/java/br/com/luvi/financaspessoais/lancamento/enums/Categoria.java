@@ -1,7 +1,6 @@
 package br.com.luvi.financaspessoais.lancamento.enums;
 
 public enum Categoria {
-
     SALARIO("Salário"),
     RENDA_EXTRA("Renda extra"),
     ALIMENTACAO("Alimentação"),

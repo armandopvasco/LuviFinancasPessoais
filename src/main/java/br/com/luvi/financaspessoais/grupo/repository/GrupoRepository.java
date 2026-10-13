@@ -1,1 +1,6 @@
-package br.com.luvi.financaspessoais.grupo.repository; import br.com.luvi.financaspessoais.grupo.entity.Grupo; import org.springframework.data.jpa.repository.JpaRepository; public interface GrupoRepository extends JpaRepository<Grupo,Long>{}
+package br.com.luvi.financaspessoais.grupo.repository;
+
+import br.com.luvi.financaspessoais.grupo.entity.Grupo;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface GrupoRepository extends JpaRepository<Grupo, Long> {}

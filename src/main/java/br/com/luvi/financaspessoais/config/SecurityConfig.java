@@ -19,44 +19,61 @@ public class SecurityConfig {
     @Bean
     @Profile("!google")
     SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(a -> a
-                    .requestMatchers("/login", "/cadastro", "/css/**", "/js/**",
-                            "/images/**", "/img/**", "/icons/**", "/manifest.webmanifest", "/sw.js", "/favicon.ico").permitAll()
-                    .anyRequest().authenticated())
-            .formLogin(f -> f
-                    .loginPage("/login")
-                    .defaultSuccessUrl("/", true)
-                    .permitAll())
-            .logout(l -> l
-                    .logoutSuccessUrl("/login?logout")
-                    .permitAll())
-            .csrf(c -> c.ignoringRequestMatchers("/api/**"));
+        http.authorizeHttpRequests(
+                        a ->
+                                a.requestMatchers(
+                                                "/login",
+                                                "/cadastro",
+                                                "/css/**",
+                                                "/js/**",
+                                                "/images/**",
+                                                "/img/**",
+                                                "/icons/**",
+                                                "/manifest.webmanifest",
+                                                "/sw.js",
+                                                "/favicon.ico")
+                                        .permitAll()
+                                        .anyRequest()
+                                        .authenticated())
+                .formLogin(f -> f.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
+                .logout(l -> l.logoutSuccessUrl("/login?logout").permitAll())
+                .csrf(c -> c.ignoringRequestMatchers("/api/**"));
 
         return http.build();
     }
 
     @Bean
     @Profile("google")
-    SecurityFilterChain googleSecurityFilterChain(HttpSecurity http,
-                                                   GoogleOidcUserService googleOidcUserService) throws Exception {
-        http.authorizeHttpRequests(a -> a
-                    .requestMatchers("/login", "/cadastro",
-                            "/oauth2/**", "/login/oauth2/**",
-                            "/css/**", "/js/**", "/images/**", "/img/**", "/icons/**", "/manifest.webmanifest", "/sw.js", "/favicon.ico").permitAll()
-                    .anyRequest().authenticated())
-            .formLogin(f -> f
-                    .loginPage("/login")
-                    .defaultSuccessUrl("/", true)
-                    .permitAll())
-            .oauth2Login(o -> o
-                    .loginPage("/login")
-                    .userInfoEndpoint(u -> u.oidcUserService(googleOidcUserService))
-                    .defaultSuccessUrl("/", true)
-                    .failureUrl("/login?googleError"))
-            .logout(l -> l
-                    .logoutSuccessUrl("/login?logout")
-                    .permitAll())
-            .csrf(c -> c.ignoringRequestMatchers("/api/**"));
+    SecurityFilterChain googleSecurityFilterChain(
+            HttpSecurity http, GoogleOidcUserService googleOidcUserService) throws Exception {
+        http.authorizeHttpRequests(
+                        a ->
+                                a.requestMatchers(
+                                                "/login",
+                                                "/cadastro",
+                                                "/oauth2/**",
+                                                "/login/oauth2/**",
+                                                "/css/**",
+                                                "/js/**",
+                                                "/images/**",
+                                                "/img/**",
+                                                "/icons/**",
+                                                "/manifest.webmanifest",
+                                                "/sw.js",
+                                                "/favicon.ico")
+                                        .permitAll()
+                                        .anyRequest()
+                                        .authenticated())
+                .formLogin(f -> f.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
+                .oauth2Login(
+                        o ->
+                                o.loginPage("/login")
+                                        .userInfoEndpoint(
+                                                u -> u.oidcUserService(googleOidcUserService))
+                                        .defaultSuccessUrl("/", true)
+                                        .failureUrl("/login?googleError"))
+                .logout(l -> l.logoutSuccessUrl("/login?logout").permitAll())
+                .csrf(c -> c.ignoringRequestMatchers("/api/**"));
 
         return http.build();
     }

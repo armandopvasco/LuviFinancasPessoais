@@ -1,1 +1,29 @@
-package br.com.luvi.financaspessoais.transferencia.dto;import br.com.luvi.financaspessoais.transferencia.entity.Transferencia;import java.math.BigDecimal;import java.time.*;public record TransferenciaResponse(Long id,Long origemId,String origemNome,Long destinoId,String destinoNome,BigDecimal valor,LocalDate data,String descricao,LocalDateTime dataHoraCadastro){public static TransferenciaResponse from(Transferencia t){return new TransferenciaResponse(t.getId(),t.getOrigem().getId(),t.getOrigem().getNome(),t.getDestino().getId(),t.getDestino().getNome(),t.getValor(),t.getData(),t.getDescricao(),t.getDataHoraCadastro());}}
+package br.com.luvi.financaspessoais.transferencia.dto;
+
+import br.com.luvi.financaspessoais.transferencia.entity.Transferencia;
+import java.math.BigDecimal;
+import java.time.*;
+
+public record TransferenciaResponse(
+        Long id,
+        Long origemId,
+        String origemNome,
+        Long destinoId,
+        String destinoNome,
+        BigDecimal valor,
+        LocalDate data,
+        String descricao,
+        LocalDateTime dataHoraCadastro) {
+    public static TransferenciaResponse from(Transferencia t) {
+        return new TransferenciaResponse(
+                t.getId(),
+                t.getOrigem().getId(),
+                t.getOrigem().getNome(),
+                t.getDestino().getId(),
+                t.getDestino().getNome(),
+                t.getValor(),
+                t.getData(),
+                t.getDescricao(),
+                t.getDataHoraCadastro());
+    }
+}

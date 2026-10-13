@@ -1,1 +1,75 @@
-package br.com.luvi.financaspessoais.lancamento.controller;import br.com.luvi.financaspessoais.lancamento.dto.*;import br.com.luvi.financaspessoais.lancamento.service.LancamentoService;import br.com.luvi.financaspessoais.usuario.service.UsuarioService;import jakarta.validation.Valid;import org.springframework.http.*;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import java.net.URI;import java.time.LocalDate;import java.util.*;@RestController @RequestMapping("/api/lancamentos")public class LancamentoController{private final LancamentoService service;private final UsuarioService usuarios;public LancamentoController(LancamentoService s,UsuarioService u){service=s;usuarios=u;}@PostMapping public ResponseEntity<LancamentoResponse>criar(@Valid @RequestBody LancamentoRequest r,Authentication a){var x=service.criar(r,usuarios.atual(a.getName()));return ResponseEntity.created(URI.create("/api/lancamentos/"+x.id())).body(x);}@GetMapping public List<LancamentoResponse>listar(@RequestParam(required=false)Integer mes,@RequestParam(required=false)Integer ano,@RequestParam(required=false)Long contaId,@RequestParam(required=false)Long grupoId,Authentication a){LocalDate h=LocalDate.now();return service.listar(mes==null?h.getMonthValue():mes,ano==null?h.getYear():ano,contaId,grupoId,usuarios.atual(a.getName()));}@GetMapping("/resumo")public ResumoMensalResponse resumo(@RequestParam(required=false)Integer mes,@RequestParam(required=false)Integer ano,@RequestParam(required=false)Long contaId,@RequestParam(required=false)Long grupoId,Authentication a){LocalDate h=LocalDate.now();return service.resumo(mes==null?h.getMonthValue():mes,ano==null?h.getYear():ano,contaId,grupoId,usuarios.atual(a.getName()));}@PutMapping("/{id}")public LancamentoResponse atualizar(@PathVariable Long id,@Valid @RequestBody LancamentoRequest r,Authentication a){return service.atualizar(id,r,usuarios.atual(a.getName()));}@DeleteMapping("/{id}")public ResponseEntity<Void>excluir(@PathVariable Long id,Authentication a){service.excluir(id,usuarios.atual(a.getName()));return ResponseEntity.noContent().build();}}
+package br.com.luvi.financaspessoais.lancamento.controller;
+
+import br.com.luvi.financaspessoais.lancamento.dto.*;
+import br.com.luvi.financaspessoais.lancamento.service.LancamentoService;
+import br.com.luvi.financaspessoais.usuario.service.UsuarioService;
+import jakarta.validation.Valid;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import java.net.URI;
+import java.time.LocalDate;
+import java.util.*;
+
+@RestController
+@RequestMapping("/api/lancamentos")
+public class LancamentoController {
+    private final LancamentoService service;
+    private final UsuarioService usuarios;
+
+    public LancamentoController(LancamentoService s, UsuarioService u) {
+        service = s;
+        usuarios = u;
+    }
+
+    @PostMapping
+    public ResponseEntity<LancamentoResponse> criar(
+            @Valid @RequestBody LancamentoRequest r, Authentication a) {
+        var x = service.criar(r, usuarios.atual(a.getName()));
+        return ResponseEntity.created(URI.create("/api/lancamentos/" + x.id())).body(x);
+    }
+
+    @GetMapping
+    public List<LancamentoResponse> listar(
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano,
+            @RequestParam(required = false) Long contaId,
+            @RequestParam(required = false) Long grupoId,
+            Authentication a) {
+        LocalDate h = LocalDate.now();
+        return service.listar(
+                mes == null ? h.getMonthValue() : mes,
+                ano == null ? h.getYear() : ano,
+                contaId,
+                grupoId,
+                usuarios.atual(a.getName()));
+    }
+
+    @GetMapping("/resumo")
+    public ResumoMensalResponse resumo(
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Integer ano,
+            @RequestParam(required = false) Long contaId,
+            @RequestParam(required = false) Long grupoId,
+            Authentication a) {
+        LocalDate h = LocalDate.now();
+        return service.resumo(
+                mes == null ? h.getMonthValue() : mes,
+                ano == null ? h.getYear() : ano,
+                contaId,
+                grupoId,
+                usuarios.atual(a.getName()));
+    }
+
+    @PutMapping("/{id}")
+    public LancamentoResponse atualizar(
+            @PathVariable Long id, @Valid @RequestBody LancamentoRequest r, Authentication a) {
+        return service.atualizar(id, r, usuarios.atual(a.getName()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id, Authentication a) {
+        service.excluir(id, usuarios.atual(a.getName()));
+        return ResponseEntity.noContent().build();
+    }
+}

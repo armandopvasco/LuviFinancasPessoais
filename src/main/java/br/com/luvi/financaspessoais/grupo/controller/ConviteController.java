@@ -27,8 +27,11 @@ public class ConviteController {
     private final ConviteGrupoRepository convites;
     private final UsuarioService usuarios;
 
-    public ConviteController(GrupoRepository grupos, GrupoMembroRepository membros,
-                             ConviteGrupoRepository convites, UsuarioService usuarios) {
+    public ConviteController(
+            GrupoRepository grupos,
+            GrupoMembroRepository membros,
+            ConviteGrupoRepository convites,
+            UsuarioService usuarios) {
         this.grupos = grupos;
         this.membros = membros;
         this.convites = convites;
@@ -59,14 +62,17 @@ public class ConviteController {
     @ResponseBody
     @PostMapping("/api/convites/aceitar")
     @Transactional
-    public Map<String, Object> aceitar(@RequestBody Map<String, String> body, Authentication authentication) {
+    public Map<String, Object> aceitar(
+            @RequestBody Map<String, String> body, Authentication authentication) {
         String codigo = normalizarCodigo(body.get("codigo"));
         if (codigo.isBlank()) {
             throw new IllegalArgumentException("Informe o código do convite.");
         }
 
-        ConviteGrupo convite = convites.findByToken(codigo)
-                .orElseThrow(() -> new IllegalArgumentException("Código de convite inválido."));
+        ConviteGrupo convite =
+                convites.findByToken(codigo)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException("Código de convite inválido."));
 
         if (convite.isUsado()) {
             throw new IllegalArgumentException("Este convite já foi utilizado.");

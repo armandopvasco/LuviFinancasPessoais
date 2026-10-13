@@ -1,1 +1,12 @@
-package br.com.luvi.financaspessoais.transferencia.dto;import jakarta.validation.constraints.*;import java.math.BigDecimal;import java.time.LocalDate;public record TransferenciaRequest(@NotNull Long origemId,@NotNull Long destinoId,@NotNull @DecimalMin("0.01") BigDecimal valor,@NotNull LocalDate data,String descricao){}
+package br.com.luvi.financaspessoais.transferencia.dto;
+
+import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public record TransferenciaRequest(
+        @NotNull Long origemId,
+        @NotNull Long destinoId,
+        @NotNull @DecimalMin("0.01") BigDecimal valor,
+        @NotNull LocalDate data,
+        String descricao) {}

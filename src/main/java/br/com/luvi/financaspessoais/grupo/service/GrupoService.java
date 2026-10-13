@@ -1,8 +1,77 @@
-package br.com.luvi.financaspessoais.grupo.service;import br.com.luvi.financaspessoais.grupo.entity.*;import br.com.luvi.financaspessoais.grupo.enums.PerfilGrupo;import br.com.luvi.financaspessoais.grupo.repository.*;import br.com.luvi.financaspessoais.usuario.entity.Usuario;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.util.*;
-@Service public class GrupoService{private final GrupoRepository grupos;private final GrupoMembroRepository membros;public GrupoService(GrupoRepository g,GrupoMembroRepository m){grupos=g;membros=m;}@Transactional public Grupo criar(String nome,Usuario u){Grupo g=new Grupo();g.setNome(nome.trim());g.setCriadoPor(u);g=grupos.save(g);GrupoMembro m=new GrupoMembro();m.setGrupo(g);m.setUsuario(u);m.setPerfil(PerfilGrupo.ADMIN);membros.save(m);return g;}@Transactional public Grupo alterarStatus(Long gid,boolean ativo,Usuario u){
-GrupoMembro m=exigirMembro(gid,u);
-Grupo g=m.getGrupo();
-if(!g.getCriadoPor().getId().equals(u.getId()))throw new SecurityException("Somente o proprietário pode alterar o status do grupo.");
-g.setAtivo(ativo);return grupos.save(g);
+package br.com.luvi.financaspessoais.grupo.service;
+
+import br.com.luvi.financaspessoais.grupo.entity.*;
+import br.com.luvi.financaspessoais.grupo.enums.PerfilGrupo;
+import br.com.luvi.financaspessoais.grupo.repository.*;
+import br.com.luvi.financaspessoais.usuario.entity.Usuario;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+
+@Service
+public class GrupoService {
+    private final GrupoRepository grupos;
+    private final GrupoMembroRepository membros;
+
+    public GrupoService(GrupoRepository g, GrupoMembroRepository m) {
+        grupos = g;
+        membros = m;
+    }
+
+    @Transactional
+    public Grupo criar(String nome, Usuario u) {
+        Grupo g = new Grupo();
+        g.setNome(nome.trim());
+        g.setCriadoPor(u);
+        g = grupos.save(g);
+        GrupoMembro m = new GrupoMembro();
+        m.setGrupo(g);
+        m.setUsuario(u);
+        m.setPerfil(PerfilGrupo.ADMIN);
+        membros.save(m);
+        return g;
+    }
+
+    @Transactional
+    public Grupo alterarStatus(Long gid, boolean ativo, Usuario u) {
+        GrupoMembro m = exigirMembro(gid, u);
+        Grupo g = m.getGrupo();
+        if (!g.getCriadoPor().getId().equals(u.getId()))
+            throw new SecurityException("Somente o proprietário pode alterar o status do grupo.");
+        g.setAtivo(ativo);
+        return grupos.save(g);
+    }
+
+    public List<GrupoMembro> meus(Usuario u) {
+        return membros.findByUsuario(u);
+    }
+
+    public GrupoMembro exigirMembro(Long gid, Usuario u) {
+        return membros.findByGrupoIdAndUsuarioId(gid, u.getId())
+                .orElseThrow(() -> new SecurityException("Acesso negado ao grupo."));
+    }
+
+    public GrupoMembro exigirAdmin(Long gid, Usuario u) {
+        var m = exigirMembro(gid, u);
+        if (m.getPerfil() != PerfilGrupo.ADMIN)
+            throw new SecurityException("Somente administrador do grupo.");
+        return m;
+    }
+
+    public List<GrupoMembro> membros(Long gid, Usuario u) {
+        exigirMembro(gid, u);
+        return membros.findByGrupoId(gid);
+    }
+
+    @Transactional
+    public void removerMembro(Long gid, Long uid, Usuario atual) {
+        exigirAdmin(gid, atual);
+        if (atual.getId().equals(uid))
+            throw new IllegalStateException(
+                    "O administrador não pode remover a si próprio por esta tela.");
+        var alvo =
+                membros.findByGrupoIdAndUsuarioId(gid, uid)
+                        .orElseThrow(() -> new IllegalArgumentException("Membro não encontrado."));
+        membros.delete(alvo);
+    }
 }
-public List<GrupoMembro> meus(Usuario u){return membros.findByUsuario(u);}public GrupoMembro exigirMembro(Long gid,Usuario u){return membros.findByGrupoIdAndUsuarioId(gid,u.getId()).orElseThrow(()->new SecurityException("Acesso negado ao grupo."));}public GrupoMembro exigirAdmin(Long gid,Usuario u){var m=exigirMembro(gid,u);if(m.getPerfil()!=PerfilGrupo.ADMIN)throw new SecurityException("Somente administrador do grupo.");return m;}public List<GrupoMembro> membros(Long gid,Usuario u){exigirMembro(gid,u);return membros.findByGrupoId(gid);}@Transactional public void removerMembro(Long gid,Long uid,Usuario atual){exigirAdmin(gid,atual);if(atual.getId().equals(uid))throw new IllegalStateException("O administrador não pode remover a si próprio por esta tela.");var alvo=membros.findByGrupoIdAndUsuarioId(gid,uid).orElseThrow(()->new IllegalArgumentException("Membro não encontrado."));membros.delete(alvo);}}

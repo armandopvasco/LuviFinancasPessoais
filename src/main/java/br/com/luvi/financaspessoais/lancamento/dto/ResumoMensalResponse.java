@@ -7,6 +7,4 @@ public record ResumoMensalResponse(
         BigDecimal receitas,
         BigDecimal despesas,
         BigDecimal movimentacao,
-        BigDecimal saldoFinal
-) {
-}
+        BigDecimal saldoFinal) {}
