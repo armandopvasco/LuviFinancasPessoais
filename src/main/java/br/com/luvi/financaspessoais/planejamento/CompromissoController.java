@@ -143,6 +143,20 @@ public class CompromissoController {
                 .toList();
     }
 
+    /** Dados do relatório limitados às contas acessíveis ao usuário autenticado. */
+    @GetMapping("/relatorio")
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> relatorio(Authentication authentication) {
+        var usuario = usuario(authentication);
+        var ids = contas.acessiveis(usuario).stream().map(conta -> conta.getId()).toList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return repo.findByContaIdInOrderByVencimentoAscIdAsc(ids).stream()
+                .map(this::dto)
+                .toList();
+    }
+
     /** Retorna todas as ocorrências visíveis da série, sem o filtro mensal da previsão. */
     @GetMapping("/{id}/recorrencia")
     @Transactional(readOnly = true)

@@ -17,7 +17,7 @@ window.fetch=async(...args)=>{
 };
 const icone=(tipo)=>tipo==="editar"?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Zm16.7-9.8a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L15.5 5l3.5 3.5 1.7-1.8Z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7Zm10-17h-3.5l-1-1h-5l-1 1H3v2h18V4h-4Z"/></svg>';
 const botaoIcone=(tipo,acao,rotulo)=>`<button type="button" class="icon-action ${tipo}" onclick="${acao}" title="${rotulo}" aria-label="${rotulo}">${icone(tipo)}</button>`;
-const modais=()=>["luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
+const modais=()=>["reportsModal","luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
 
 document.addEventListener("DOMContentLoaded",async()=>{
   // v5.11.1: delegação central. Continua funcionando mesmo para conteúdo criado dinamicamente.
@@ -288,7 +288,7 @@ async function excluirTransferencia(id){if(!await confirmar("Deseja realmente ex
 let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){const r=messageResolver;messageResolver=null;if(r)r(v);fecharCamada("messageModal",false)}
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
-function fecharSubtelasPrincipais(excecao=null){["categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
+function fecharSubtelasPrincipais(excecao=null){["reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
 function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}
@@ -766,3 +766,110 @@ function renderizarCategoriasPrevisaoLuvi(items, expandidas = new Set()) {
     <div class="luvi-forecast-category-items">${grupo.items.map(linhaCompromissoPrevisaoLuvi).join("")}</div>
   </details>`).join("");
 }
+
+// Relatórios consultam todos os meses e reutilizam a fatura consolidada.
+let luviReportItems = [], luviReportFiltered = [], luviReportRequest = 0;
+function chaveCategoriaRelatorioLuvi(item) {
+  return item.cartaoId ? "FATURAS" : `${item.tipo}:${item.categoriaId ?? item.categoria}`;
+}
+async function abrirRelatoriosLuvi() {
+  fecharSubtelasPrincipais("reportsModal"); toggleMenu(false);
+  abrirCamada("reportsModal");
+  await carregarRelatoriosLuvi();
+}
+async function carregarRelatoriosLuvi() {
+  const request = ++luviReportRequest;
+  $("reportMessage").textContent = "Carregando registros...";
+  $("reportPrint").disabled = true;
+  $("reportRefresh").disabled = true;
+  luviReportItems = []; luviReportFiltered = [];
+  $("reportRows").innerHTML = ""; $("reportTotals").innerHTML = "";
+  try {
+    const r = await fetch("/api/planejamento/relatorio");
+    if (!r.ok) throw new Error(await erro(r));
+    const items = await r.json();
+    const cr = await fetch("/api/cartoes");
+    if (!cr.ok) throw new Error(await erro(cr));
+    const cards = await cr.json(), parcelaIds = new Set(), invoices = [];
+    const byId = new Map(items.map(item=>[item.id,item]));
+    for (const card of cards) {
+      const fr = await fetch(`/api/cartoes/${card.id}/faturas`);
+      if (!fr.ok) throw new Error(await erro(fr));
+      for (const invoice of await fr.json()) {
+        const visible = invoice.itens.filter(item=>byId.has(item.compromissoId));
+        if (!visible.length) continue;
+        visible.forEach(item=>parcelaIds.add(item.compromissoId));
+        const first = byId.get(visible[0].compromissoId);
+        const total = visible.reduce((sum,item)=>sum+Number(item.valor),0);
+        invoices.push({id:`fatura-${card.id}-${invoice.competencia}`,cartaoId:card.id,
+          descricao:`Fatura ${card.nome} · ${invoice.competencia.slice(0,7).split('-').reverse().join('/')}`,
+          categoria:"Faturas de cartão",tipo:"DESPESA",contaId:invoice.paga ? (invoice.contaPagamentoId ?? first.contaId) : (card.contaPagamentoId ?? first.contaId),
+          contaNome:invoice.paga ? (contas.find(c=>c.id===invoice.contaPagamentoId)?.nome || first.contaNome) : first.contaNome,
+          vencimento:first.vencimento,valor:total,status:invoice.paga?"PAGO":"PENDENTE",dataPagamento:invoice.dataPagamento,valorEfetivo:invoice.paga?total:null});
+      }
+    }
+    if (request !== luviReportRequest) return;
+    luviReportItems = [...items.filter(item=>!parcelaIds.has(item.id)),...invoices];
+    const accountValue = $("reportAccount").value, categoryValue = $("reportCategory").value;
+    const accounts = new Map(luviReportItems.map(item=>[String(item.contaId),item.contaNome]));
+    contas.forEach(c=>accounts.set(String(c.id),c.nome));
+    $("reportAccount").innerHTML = '<option value="">Todas as contas</option>'+[...accounts].map(([id,name])=>`<option value="${escaparHtml(id)}">${escaparHtml(name)}</option>`).join("");
+    $("reportAccount").value = accounts.has(accountValue)?accountValue:"";
+    const categories = new Map(luviReportItems.map(item=>[chaveCategoriaRelatorioLuvi(item),`${item.categoria || "Sem categoria"} · ${item.tipo==="RECEITA"?"Receita":"Despesa"}`]));
+    $("reportCategory").innerHTML = '<option value="">Todas as categorias</option>'+[...categories].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).map(([key,name])=>`<option value="${escaparHtml(key)}">${escaparHtml(name)}</option>`).join("");
+    $("reportCategory").value = categories.has(categoryValue)?categoryValue:"";
+    renderizarRelatorioLuvi();
+  } catch(error) {
+    if (request===luviReportRequest) $("reportMessage").textContent = `Não foi possível carregar o relatório: ${error.message}`;
+  } finally { if(request===luviReportRequest) $("reportRefresh").disabled=false; }
+}
+function filtrarRelatorioLuvi(items, filters, today=hojeISO()) {
+  const limitDate = new Date(`${today}T12:00:00`); limitDate.setDate(limitDate.getDate()+Number(filters.days));
+  const limit = `${limitDate.getFullYear()}-${String(limitDate.getMonth()+1).padStart(2,'0')}-${String(limitDate.getDate()).padStart(2,'0')}`;
+  return items.filter(item=>{
+    const pending=item.status==="PENDENTE", date=item.vencimento;
+    if(filters.status==="ABERTO"&&!pending)return false;
+    if(filters.status==="VENCIDO"&&(!pending||date>=today))return false;
+    if(filters.status==="HOJE"&&(!pending||date!==today))return false;
+    if(filters.status==="PROXIMOS"&&(!pending||date<=today||date>limit))return false;
+    if(filters.status==="REALIZADO"&&item.status!=="PAGO")return false;
+    return (!filters.account||String(item.contaId)===filters.account)&&(!filters.category||chaveCategoriaRelatorioLuvi(item)===filters.category)&&(!filters.type||item.tipo===filters.type)&&(!filters.start||date>=filters.start)&&(!filters.end||date<=filters.end);
+  }).sort((a,b)=>a.vencimento.localeCompare(b.vencimento)||a.descricao.localeCompare(b.descricao,"pt-BR"));
+}
+function filtrosRelatorioLuvi() {
+  return {status:$("reportStatus").value,days:$("reportDays").value,account:$("reportAccount").value,category:$("reportCategory").value,type:$("reportType").value,start:$("reportStart").value,end:$("reportEnd").value};
+}
+function totaisRelatorioLuvi(items) {
+  return {receitas:items.filter(x=>x.tipo==="RECEITA").reduce((v,x)=>v+Number(x.valor),0),despesas:items.filter(x=>x.tipo==="DESPESA").reduce((v,x)=>v+Number(x.valor),0)};
+}
+function linhasRelatorioLuvi(items) {
+  return items.map(item=>`<article class="luvi-report-row"><div><strong>${escaparHtml(item.descricao)}</strong><small>${escaparHtml(item.categoria)} · ${escaparHtml(item.contaNome)}</small></div><span>${formatarData(item.vencimento)}</span><strong class="${item.tipo==="RECEITA"?"valor-receita":"valor-despesa"}">${item.tipo==="RECEITA"?"+":"−"} ${formatarMoeda(Number(item.valor))}</strong><span>${escaparHtml(situacaoRecorrenciaLuvi(item))}</span></article>`).join("");
+}
+function renderizarRelatorioLuvi() {
+  const f=filtrosRelatorioLuvi(); $("reportDays").disabled=f.status!=="PROXIMOS";
+  $("reportPrint").disabled=true;
+  if(f.start&&f.end&&f.start>f.end){luviReportFiltered=[];$("reportMessage").textContent="O início do período deve ser anterior ou igual ao fim.";$("reportRows").innerHTML="";$("reportTotals").innerHTML="";return;}
+  luviReportFiltered=filtrarRelatorioLuvi(luviReportItems,f);
+  const total=totaisRelatorioLuvi(luviReportFiltered);
+  const despesasLabel = ["REALIZADO","TODOS"].includes(f.status) ? "Despesas previstas" : "A pagar";
+  const receitasLabel = ["REALIZADO","TODOS"].includes(f.status) ? "Receitas previstas" : "A receber";
+  $("reportMessage").textContent=luviReportFiltered.length?`${luviReportFiltered.length} registros encontrados. Valores previstos dos registros selecionados.`:"Nenhum registro para estes filtros.";
+  $("reportTotals").innerHTML=`<div><small>${despesasLabel}</small><strong>${formatarMoeda(total.despesas)}</strong></div><div><small>${receitasLabel}</small><strong>${formatarMoeda(total.receitas)}</strong></div><div><small>Registros</small><strong>${luviReportFiltered.length}</strong></div>`;
+  $("reportRows").innerHTML=linhasRelatorioLuvi(luviReportFiltered);
+  $("reportPrint").disabled=!luviReportFiltered.length;
+}
+function imprimirRelatorioLuvi() {
+  if(!luviReportFiltered.length)return;
+  const popup=window.open("","_blank","width=1000,height=750");
+  if(!popup){mensagem("Permita abrir a janela de impressão para salvar o PDF.");return;}
+  popup.opener=null;
+  const filters=["reportStatus","reportAccount","reportCategory","reportType"].map(id=>$(id).selectedOptions[0]?.textContent||"");
+  if($("reportStatus").value==="PROXIMOS")filters.push($("reportDays").selectedOptions[0].textContent);
+  filters.push(`Vencimento: ${$("reportStart").value?formatarData($("reportStart").value):"sem início"} a ${$("reportEnd").value?formatarData($("reportEnd").value):"sem fim"}`);
+  const total=totaisRelatorioLuvi(luviReportFiltered);
+  popup.document.open();popup.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>LUVI — Relatório de compromissos</title><style>@page{size:A4 landscape;margin:14mm}body{font:12px Arial;color:#172c45}h1{font-size:21px}.luvi-report-row{display:grid;grid-template-columns:2fr 90px 120px 150px;gap:12px;padding:10px 0;border-bottom:1px solid #ddd;break-inside:avoid}small{display:block;margin-top:4px;color:#555}.valor-receita{color:#146e38}.valor-despesa{color:#a12828}@media print{button{display:none}}</style></head><body><h1>LUVI Finanças · Compromissos</h1><p>${escaparHtml(filters.join(" · "))}</p><p>${luviReportFiltered.length} registros · Despesas previstas: ${formatarMoeda(total.despesas)} · Receitas previstas: ${formatarMoeda(total.receitas)}</p><p>Valores previstos. Período por vencimento. Emitido em ${escaparHtml(new Date().toLocaleString("pt-BR"))}.</p>${linhasRelatorioLuvi(luviReportFiltered)}<button id="print" type="button">Imprimir / Salvar PDF</button></body></html>`);popup.document.close();popup.document.getElementById("print").onclick=()=>popup.print();popup.focus();popup.print();
+}
+$("reportsMenu")?.addEventListener("click",abrirRelatoriosLuvi);
+$("reportRefresh")?.addEventListener("click",carregarRelatoriosLuvi);
+$("reportPrint")?.addEventListener("click",imprimirRelatorioLuvi);
+for(const id of ["reportStatus","reportDays","reportAccount","reportCategory","reportType","reportStart","reportEnd"])$(id)?.addEventListener("change",renderizarRelatorioLuvi);
