@@ -914,6 +914,7 @@ function renderizarAvisosLuvi(){
  });
 }
 async function abrirConfiguracoesLuvi(){
+ if(window.luviPasskeySettings)window.luviPasskeySettings();
  toggleMenu(false);fecharSubtelasPrincipais('settingsModal');abrirCamada('settingsModal');$('settingsMessage').textContent='Carregando...';$('settingsSave').disabled=true;
  try{const r=await fetch('/api/preferencias');if(!r.ok)throw new Error(await erro(r));luviPreferencias=await r.json();$('settingsNotifications').checked=luviPreferencias.avisosAtivos;$('settingsDays').value=luviPreferencias.avisosDias;$('settingsDays').disabled=!luviPreferencias.avisosAtivos;$('settingsMessage').textContent='';$('settingsSave').disabled=false;}
  catch(e){$('settingsMessage').textContent=e.message;}

@@ -133,3 +133,5 @@ input:focus { outline:2px solid #A9CBE9; outline-offset:1px; }
   border-radius:22px;
   overflow:hidden;
 }
+
+#passkeyLogin{margin:16px 0}#passkeyLoginButton{width:100%;cursor:pointer}#passkeyCancelButton{margin-top:8px;background:transparent;color:#526174;border:0;cursor:pointer}#passkeyLoginMessage{font-size:13px;line-height:1.5}.hidden{display:none!important}

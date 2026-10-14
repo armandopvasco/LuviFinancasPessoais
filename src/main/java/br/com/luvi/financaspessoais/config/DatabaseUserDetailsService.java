@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class DatabaseUserDetailsService implements UserDetailsService {
     private final UsuarioRepository repo;
+    private final String unavailablePassword =
+            new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder()
+                    .encode(java.util.UUID.randomUUID().toString());
 
     public DatabaseUserDetailsService(UsuarioRepository r) {
         repo = r;
@@ -23,10 +26,15 @@ public class DatabaseUserDetailsService implements UserDetailsService {
                                                         () ->
                                                                 new UsernameNotFoundException(
                                                                         "Usuário não encontrado")));
-        if (u.getSenha() == null || u.getSenha().isBlank())
-            throw new UsernameNotFoundException("Conta configurada para acesso com Google.");
+        if (!u.isAtivo()) {
+            throw new org.springframework.security.authentication.DisabledException(
+                    "Conta desativada.");
+        }
         return User.withUsername(u.getLogin())
-                .password(u.getSenha())
+                .password(
+                        u.getSenha() == null || u.getSenha().isBlank()
+                                ? unavailablePassword
+                                : u.getSenha())
                 .roles("USER")
                 .disabled(!u.isAtivo())
                 .build();
