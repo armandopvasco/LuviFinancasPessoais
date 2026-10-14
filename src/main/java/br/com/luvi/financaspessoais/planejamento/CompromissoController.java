@@ -143,6 +143,25 @@ public class CompromissoController {
                 .toList();
     }
 
+    /** Retorna todas as ocorrências visíveis da série, sem o filtro mensal da previsão. */
+    @GetMapping("/{id}/recorrencia")
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listarRecorrencia(
+            @PathVariable Long id, Authentication authentication) {
+        var usuario = usuario(authentication);
+        var compromisso = exigir(id, usuario);
+        var serie = compromisso.getSerieRecorrencia();
+        var ocorrencias = serie == null
+                ? List.of(compromisso)
+                : repo.findBySerieRecorrenciaOrderByVencimentoAscIdAsc(serie);
+
+        // Uma série pode ter contas diferentes após a edição de ocorrências.
+        return ocorrencias.stream()
+                .filter(item -> contas.podeAcessar(item.getConta().getId(), usuario))
+                .map(this::dto)
+                .toList();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional

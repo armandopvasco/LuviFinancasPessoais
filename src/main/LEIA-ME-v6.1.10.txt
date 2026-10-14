@@ -1,0 +1,3 @@
+LUVI v6.1.10 - correção experimental do histórico do Chrome Android.
+Teste Início > Categorias > Nova categoria > Voltar > Voltar.
+Não publicar em produção antes da validação no aparelho.

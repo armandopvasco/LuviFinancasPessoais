@@ -17,7 +17,7 @@ window.fetch=async(...args)=>{
 };
 const icone=(tipo)=>tipo==="editar"?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Zm16.7-9.8a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L15.5 5l3.5 3.5 1.7-1.8Z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7Zm10-17h-3.5l-1-1h-5l-1 1H3v2h18V4h-4Z"/></svg>';
 const botaoIcone=(tipo,acao,rotulo)=>`<button type="button" class="icon-action ${tipo}" onclick="${acao}" title="${rotulo}" aria-label="${rotulo}">${icone(tipo)}</button>`;
-const modais=()=>["shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
+const modais=()=>["luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
 
 document.addEventListener("DOMContentLoaded",async()=>{
   // v5.11.1: delegação central. Continua funcionando mesmo para conteúdo criado dinamicamente.
@@ -506,7 +506,9 @@ function renderizarCompromissosLuvi(){
  $("luviFutureIncome").textContent=formatarMoeda(receitas);
  $("luviFutureExpense").textContent=formatarMoeda(despesas);
  $("luviFutureBalance").textContent=formatarMoeda(saldoReal+receitas-despesas);
- $("luviFutureRows").innerHTML=luviCompromissos.length?luviCompromissos.map(x=>`<div class="luvi-future-row"><div class="luvi-future-description"><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)} · ${escaparHtml(x.categoria)}${x.status==='PAGO'&&x.dataPagamento?` · Realizado em ${formatarData(x.dataPagamento)}${x.valorEfetivo!=null?` por ${formatarMoeda(Number(x.valorEfetivo))}`:''}`:''}</small></div><span class="${x.tipo==='RECEITA'?'valor-receita':'valor-despesa'}">${x.tipo==='RECEITA'?'+':'−'} ${formatarMoeda(Number(x.valor))}</span><span class="luvi-future-status ${x.status==='PAGO'?'paid':''}">${x.status==='PAGO'?(x.dataPagamento&&x.dataPagamento<x.vencimento?'Pago antecipadamente':'Pago'):'Pendente'}</span>${x.status==='PENDENTE'?`<button type="button" class="secondary-button" data-future-pay="${x.id}">${x.cartaoId?'Ver fatura':x.tipo==='RECEITA'?'Receber':'Pagar'}</button>${x.cartaoId?'':`<button type="button" class="icon-action editar" data-future-edit="${x.id}" aria-label="Editar compromisso" title="Editar compromisso">${icone("editar")}</button>`}<button type="button" class="icon-action excluir" data-future-delete="${x.id}" aria-label="Excluir compromisso" title="Excluir compromisso">${icone("excluir")}</button>`:''}</div>`).join(''):'<div class="empty-state">Nenhum compromisso neste mês. Cadastre um lançamento futuro.</div>';
+ const expandidas = new Set([...$("luviFutureRows").querySelectorAll("details[data-category-key][open]")].map(el=>el.dataset.categoryKey));
+ $("luviFutureRows").innerHTML=renderizarCategoriasPrevisaoLuvi(luviCompromissos, expandidas);
+ $("luviFutureRows").querySelectorAll('[data-future-series]').forEach(button=>button.onclick=()=>abrirRecorrenciaLuvi(Number(button.dataset.futureSeries)));
  $("luviFutureRows").querySelectorAll('[data-future-pay]').forEach(b=>b.onclick=()=>{const id=b.dataset.futurePay;const c=luviCompromissos.find(x=>String(x.id)===id);if(c?.cartaoId){luviOpenCards().then(()=>luviOpenInvoice(`${c.cartaoId}|${c.competencia}`));}else pagarCompromissoLuvi(Number(id));});
  $("luviFutureRows").querySelectorAll('[data-future-edit]').forEach(b=>b.onclick=()=>abrirEdicaoCompromissoLuvi(Number(b.dataset.futureEdit)));
  $("luviFutureRows").querySelectorAll('[data-future-delete]').forEach(b=>b.onclick=()=>{const id=b.dataset.futureDelete;const c=luviCompromissos.find(x=>String(x.id)===id);if(c?.cartaoId){luviOpenCards().then(()=>luviOpenInvoice(`${c.cartaoId}|${c.competencia}`));}else excluirCompromissoLuvi(Number(id));});
@@ -680,3 +682,87 @@ async function luviLoadPurchaseCategories(){
  finally{if(request===luviPurchaseCategoryRequest)select.disabled=false;}
 }
 $('luviPurchaseCard')?.addEventListener('change',luviLoadPurchaseCategories);
+
+// Resumo completo da série, incluindo ocorrências realizadas e meses futuros.
+let luviRecurrenceItems = [];
+let luviRecurrenceRequest = 0;
+function situacaoRecorrenciaLuvi(item) {
+  if (item.status === "PAGO") {
+    const situacao = item.tipo === "RECEITA" ? "Recebido" : "Pago";
+    return item.dataPagamento ? `${situacao} em ${formatarData(item.dataPagamento)}` : situacao;
+  }
+  return item.vencimento < hojeISO() ? "Pendente · vencido" : "Pendente";
+}
+function resumoRecorrenciaLuvi(items) {
+  const realizados = items.filter(item => item.status === "PAGO").length;
+  const total = items.reduce((sum, item) => sum + Number(item.valor), 0);
+  return `${items.length} ocorrências · ${realizados} realizadas · ${items.length - realizados} pendentes · Total previsto: ${formatarMoeda(total)}`;
+}
+function listaRecorrenciaLuvi(items) {
+  return items.map((item, index) => `<li class="luvi-series-item">
+    <span class="luvi-series-date">${index + 1}. ${formatarData(item.vencimento)}<small>${escaparHtml(item.descricao)} · ${escaparHtml(item.contaNome)}</small></span>
+    <strong>${formatarMoeda(Number(item.valor))}</strong>
+    <span class="luvi-series-status ${item.status === "PAGO" ? "paid" : ""}">${escaparHtml(situacaoRecorrenciaLuvi(item))}${item.status === "PAGO" && item.dataPagamento ? `<small>${item.valorEfetivo != null ? `Valor realizado: ${formatarMoeda(Number(item.valorEfetivo))}` : ""}</small>` : ""}</span>
+  </li>`).join("");
+}
+async function abrirRecorrenciaLuvi(id) {
+  const request = ++luviRecurrenceRequest;
+  luviRecurrenceItems = [];
+  $("luviRecurrencePrint").disabled = true;
+  $("luviRecurrenceSummary").textContent = "Carregando ocorrências...";
+  $("luviRecurrenceList").innerHTML = "";
+  $("luviRecurrenceTitle").textContent = "Recorrência";
+  abrirCamada("luviRecurrenceModal");
+  try {
+    const response = await fetch(`/api/planejamento/${id}/recorrencia`);
+    if (!response.ok) throw new Error(await erro(response));
+    const items = await response.json();
+    if (request !== luviRecurrenceRequest) return;
+    luviRecurrenceItems = items;
+    $("luviRecurrenceTitle").textContent = items[0]?.descricao || "Recorrência";
+    $("luviRecurrenceSummary").textContent = items.length ? resumoRecorrenciaLuvi(items) : "Nenhuma ocorrência disponível.";
+    $("luviRecurrenceList").innerHTML = listaRecorrenciaLuvi(items);
+    $("luviRecurrencePrint").disabled = !items.length;
+  } catch (error) {
+    if (request === luviRecurrenceRequest) $("luviRecurrenceSummary").textContent = error.message;
+  }
+}
+function imprimirRecorrenciaLuvi() {
+  if (!luviRecurrenceItems.length) return;
+  const popup = window.open("", "_blank", "width=900,height=700");
+  if (!popup) { mensagem("Permita abrir a janela de impressão no navegador para salvar o PDF."); return; }
+  popup.opener = null;
+  const title = escaparHtml($("luviRecurrenceTitle").textContent);
+  popup.document.open();
+  popup.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>LUVI — ${title}</title><style>
+    @page{size:A4;margin:16mm}body{font:14px Arial,sans-serif;color:#172c45;margin:24px}h1{font-size:21px}p{line-height:1.5}ul{list-style:none;padding:0}.luvi-series-item{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid #ddd;break-inside:avoid}small{display:block;font-size:11px;color:#555;margin-top:4px}.luvi-series-status{min-width:110px}button{padding:10px 16px;cursor:pointer}@media print{button{display:none}body{margin:0}}
+    </style></head><body><h1>LUVI Finanças · Recorrência</h1><h2>${title}</h2><p>${escaparHtml(resumoRecorrenciaLuvi(luviRecurrenceItems))}</p><ul>${listaRecorrenciaLuvi(luviRecurrenceItems)}</ul><p><small>Emitido em ${escaparHtml(new Date().toLocaleString("pt-BR"))}. Valores da coluna principal são os previstos; valores realizados aparecem junto à situação.</small></p><button type="button" id="print">Imprimir / Salvar PDF</button></body></html>`);
+  popup.document.close();
+  popup.document.getElementById("print").onclick = () => popup.print();
+  popup.focus();
+  popup.print();
+}
+$("luviRecurrencePrint")?.addEventListener("click", imprimirRecorrenciaLuvi);
+
+function linhaCompromissoPrevisaoLuvi(x) { return `<div class="luvi-future-row"><div class="luvi-future-description"><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)} · ${escaparHtml(x.categoria)}${x.status==='PAGO'&&x.dataPagamento?` · Realizado em ${formatarData(x.dataPagamento)}${x.valorEfetivo!=null?` por ${formatarMoeda(Number(x.valorEfetivo))}`:''}`:''}</small></div><span class="${x.tipo==='RECEITA'?'valor-receita':'valor-despesa'}">${x.tipo==='RECEITA'?'+':'−'} ${formatarMoeda(Number(x.valor))}</span><span class="luvi-future-status ${x.status==='PAGO'?'paid':''}">${x.status==='PAGO'?(x.dataPagamento&&x.dataPagamento<x.vencimento?'Pago antecipadamente':'Pago'):'Pendente'}</span>${x.status==='PENDENTE'?`<button type="button" class="secondary-button" data-future-pay="${x.id}">${x.cartaoId?'Ver fatura':x.tipo==='RECEITA'?'Receber':'Pagar'}</button>${x.cartaoId?'':`<button type="button" class="icon-action editar" data-future-edit="${x.id}" aria-label="Editar compromisso" title="Editar compromisso">${icone("editar")}</button>`}<button type="button" class="icon-action excluir" data-future-delete="${x.id}" aria-label="Excluir compromisso" title="Excluir compromisso">${icone("excluir")}</button>`:''}${x.serieRecorrencia&&!x.cartaoId?`<button type="button" class="icon-action" data-future-series="${x.id}" aria-label="Ver recorrência" title="Ver recorrência"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H4V2h2Zm1 2H6v16h12V8h-5V4H7Zm8 1v1h1l-1-1ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z"/></svg></button>`:''}</div>`; }
+
+function agruparCategoriasPrevisaoLuvi(items) {
+  const grupos = new Map();
+  for (const item of items) {
+    const nome = item.cartaoId ? "Faturas de cartão" : (item.categoria || "Sem categoria");
+    const key = item.cartaoId ? "DESPESA:cartoes" : `${item.tipo}:${item.categoriaId != null ? item.categoriaId : nome}`;
+    if (!grupos.has(key)) grupos.set(key, {key, nome, tipo:item.tipo, items:[], pendente:0, previsto:0});
+    const grupo = grupos.get(key);
+    grupo.items.push(item);
+    grupo.previsto += Number(item.valor);
+    if (item.status === "PENDENTE") grupo.pendente += Number(item.valor);
+  }
+  return [...grupos.values()].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR") || a.tipo.localeCompare(b.tipo));
+}
+function renderizarCategoriasPrevisaoLuvi(items, expandidas = new Set()) {
+  if (!items.length) return '<div class="empty-state">Nenhum compromisso neste mês. Cadastre um lançamento futuro.</div>';
+  return agruparCategoriasPrevisaoLuvi(items).map(grupo=>`<details class="luvi-forecast-category ${grupo.tipo === "RECEITA" ? "income" : "expense"}" data-category-key="${escaparHtml(grupo.key)}" ${expandidas.has(grupo.key) ? "open" : ""}>
+    <summary><span class="luvi-forecast-category-name"><strong>${escaparHtml(grupo.nome)}</strong><small>${grupo.tipo === "RECEITA" ? "Receita" : "Despesa"} · ${grupo.items.length} ${grupo.items.length === 1 ? "registro" : "registros"}</small></span><span class="luvi-forecast-category-total"><strong>${formatarMoeda(grupo.pendente)}</strong><small>Pendente · Total previsto: ${formatarMoeda(grupo.previsto)}</small></span><svg class="luvi-forecast-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></summary>
+    <div class="luvi-forecast-category-items">${grupo.items.map(linhaCompromissoPrevisaoLuvi).join("")}</div>
+  </details>`).join("");
+}
