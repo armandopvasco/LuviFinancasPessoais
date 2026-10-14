@@ -17,7 +17,7 @@ window.fetch=async(...args)=>{
 };
 const icone=(tipo)=>tipo==="editar"?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Zm16.7-9.8a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L15.5 5l3.5 3.5 1.7-1.8Z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7Zm10-17h-3.5l-1-1h-5l-1 1H3v2h18V4h-4Z"/></svg>';
 const botaoIcone=(tipo,acao,rotulo)=>`<button type="button" class="icon-action ${tipo}" onclick="${acao}" title="${rotulo}" aria-label="${rotulo}">${icone(tipo)}</button>`;
-const modais=()=>["reportsModal","luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
+const modais=()=>["settingsModal","notificationsModal","reportsModal","luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
 
 document.addEventListener("DOMContentLoaded",async()=>{
   // v5.11.1: delegação central. Continua funcionando mesmo para conteúdo criado dinamicamente.
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("copyInviteButton").onclick=()=>copiarConvite(false);
   $("fecharMessage").onclick=$("messageCancel").onclick=()=>resolverMensagem(false); $("messageOk").onclick=()=>resolverMensagem(true);
   window.luviLayerOrder=window.luviLayerOrder||0;
-  try { await carregarContexto(); await carregarCategorias(); await carregarDadosMes(); }
+  try { await carregarContexto(); await carregarCategorias(); await carregarDadosMes(); await iniciarAvisosLuvi(); }
   catch (e) { console.error("Falha ao carregar os dados iniciais", e); await mensagem("Não foi possível carregar os dados. Atualize a página para tentar novamente."); }
 });
 
@@ -263,7 +263,7 @@ function atualizarSelectCategorias(){
   $("categoria").innerHTML=lista.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join("");
   if(!lista.length)$("categoria").innerHTML='<option value="">Nenhuma categoria ativa para este tipo</option>';
 }
-async function carregarDadosMes(){await Promise.all([carregarLancamentos(),carregarTransferencias(),carregarResumo()]);renderizar();if(luviPrevisaoAtiva)await carregarCompromissosLuvi()}
+async function carregarDadosMes(){await Promise.all([carregarLancamentos(),carregarTransferencias(),carregarResumo()]);renderizar();if(luviPrevisaoAtiva)await carregarCompromissosLuvi();await atualizarAvisosLuvi()}
 function qs(){const m=dataAtual.getMonth()+1,a=dataAtual.getFullYear();return`mes=${m}&ano=${a}${contaSelecionada?`&contaId=${contaSelecionada}`:""}${grupoSelecionado?`&grupoId=${grupoSelecionado}`:""}`}
 async function carregarLancamentos(){const m=dataAtual.getMonth()+1,a=dataAtual.getFullYear();$("mesAtual").textContent=`${nomesMeses[m-1]} de ${a}`;const r=await fetch(`/api/lancamentos?${qs()}`);if(!r.ok){mensagem(await erro(r));return}lancamentos=await r.json()}
 async function carregarTransferencias(){const r=await fetch(`/api/transferencias?${qs()}`);transferencias=r.ok?await r.json():[]}
@@ -288,7 +288,7 @@ async function excluirTransferencia(id){if(!await confirmar("Deseja realmente ex
 let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){const r=messageResolver;messageResolver=null;if(r)r(v);fecharCamada("messageModal",false)}
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
-function fecharSubtelasPrincipais(excecao=null){["reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
+function fecharSubtelasPrincipais(excecao=null){["settingsModal","notificationsModal","reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
 function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}
@@ -534,8 +534,9 @@ async function salvarCompromissoLuvi(e){
  if(!r.ok){$("luviFutureError").textContent=await erro(r);return;}
  fecharCamada('luviFutureModal',false);await carregarCompromissosLuvi();
 }
-function pagarCompromissoLuvi(id){
- const c=luviCompromissos.find(x=>x.id===id);if(!c)return;
+let luviPagamentoSelecionado=null;
+function pagarCompromissoLuvi(id, selecionado=null){
+ const c=selecionado||luviCompromissos.find(x=>x.id===id);luviPagamentoSelecionado=c;if(!c)return;
  $("luviPayId").value=String(id);
  $("luviPayTitle").textContent=c.tipo==='RECEITA'?'Registrar recebimento':'Registrar pagamento';
  $("luviPayInfo").textContent=`${c.descricao} · Previsto: ${formatarMoeda(Number(c.valor))} · Vencimento: ${formatarData(c.vencimento)}`;
@@ -546,13 +547,13 @@ function pagarCompromissoLuvi(id){
  $("luviPayNote").value='';$("luviPayError").textContent='';atualizarCalculoPagamentoLuvi();abrirCamada('luviPayModal');
 }
 function atualizarCalculoPagamentoLuvi(){
- const c=luviCompromissos.find(x=>x.id===Number($("luviPayId").value));if(!c)return;
+ const c=luviPagamentoSelecionado||luviCompromissos.find(x=>x.id===Number($("luviPayId").value));if(!c)return;
  const esperado=Math.round(Number(c.valor)*100)-Math.round(Number($("luviPayDiscount").value||0)*100)+Math.round(Number($("luviPayExtra").value||0)*100);
  const efetivo=Math.round(Number($("luviPayValue").value||0)*100);
  $("luviPayCalc").textContent=`Valor calculado: ${formatarMoeda(esperado/100)}${efetivo!==esperado?' · Informe desconto/acréscimo para justificar a diferença.':''}`;
 }
 async function salvarPagamentoLuvi(e){
- e.preventDefault();const id=Number($("luviPayId").value),c=luviCompromissos.find(x=>x.id===id);if(!c)return;
+ e.preventDefault();const id=Number($("luviPayId").value),c=luviPagamentoSelecionado||luviCompromissos.find(x=>x.id===id);if(!c)return;
  const dados={contaId:Number($("luviPayAccount").value),data:$("luviPayDate").value,valorEfetivo:Number($("luviPayValue").value),desconto:Number($("luviPayDiscount").value||0),acrescimo:Number($("luviPayExtra").value||0),naturezaAcrescimo:$("luviPayExtraKind").value,observacao:$("luviPayNote").value.trim()};
  const cent=v=>Math.round(v*100);
  if(cent(dados.valorEfetivo)!==cent(Number(c.valor))-cent(dados.desconto)+cent(dados.acrescimo)){$("luviPayError").textContent='O valor efetivo deve ser igual ao previsto menos desconto mais acréscimo.';return;}
@@ -785,31 +786,9 @@ async function carregarRelatoriosLuvi() {
   luviReportItems = []; luviReportFiltered = [];
   $("reportRows").innerHTML = ""; $("reportTotals").innerHTML = "";
   try {
-    const r = await fetch("/api/planejamento/relatorio");
-    if (!r.ok) throw new Error(await erro(r));
-    const items = await r.json();
-    const cr = await fetch("/api/cartoes");
-    if (!cr.ok) throw new Error(await erro(cr));
-    const cards = await cr.json(), parcelaIds = new Set(), invoices = [];
-    const byId = new Map(items.map(item=>[item.id,item]));
-    for (const card of cards) {
-      const fr = await fetch(`/api/cartoes/${card.id}/faturas`);
-      if (!fr.ok) throw new Error(await erro(fr));
-      for (const invoice of await fr.json()) {
-        const visible = invoice.itens.filter(item=>byId.has(item.compromissoId));
-        if (!visible.length) continue;
-        visible.forEach(item=>parcelaIds.add(item.compromissoId));
-        const first = byId.get(visible[0].compromissoId);
-        const total = visible.reduce((sum,item)=>sum+Number(item.valor),0);
-        invoices.push({id:`fatura-${card.id}-${invoice.competencia}`,cartaoId:card.id,
-          descricao:`Fatura ${card.nome} · ${invoice.competencia.slice(0,7).split('-').reverse().join('/')}`,
-          categoria:"Faturas de cartão",tipo:"DESPESA",contaId:invoice.paga ? (invoice.contaPagamentoId ?? first.contaId) : (card.contaPagamentoId ?? first.contaId),
-          contaNome:invoice.paga ? (contas.find(c=>c.id===invoice.contaPagamentoId)?.nome || first.contaNome) : first.contaNome,
-          vencimento:first.vencimento,valor:total,status:invoice.paga?"PAGO":"PENDENTE",dataPagamento:invoice.dataPagamento,valorEfetivo:invoice.paga?total:null});
-      }
-    }
+    const consolidated = await buscarCompromissosConsolidadosLuvi();
     if (request !== luviReportRequest) return;
-    luviReportItems = [...items.filter(item=>!parcelaIds.has(item.id)),...invoices];
+    luviReportItems = consolidated;
     const accountValue = $("reportAccount").value, categoryValue = $("reportCategory").value;
     const accounts = new Map(luviReportItems.map(item=>[String(item.contaId),item.contaNome]));
     contas.forEach(c=>accounts.set(String(c.id),c.nome));
@@ -873,3 +852,80 @@ $("reportsMenu")?.addEventListener("click",abrirRelatoriosLuvi);
 $("reportRefresh")?.addEventListener("click",carregarRelatoriosLuvi);
 $("reportPrint")?.addEventListener("click",imprimirRelatorioLuvi);
 for(const id of ["reportStatus","reportDays","reportAccount","reportCategory","reportType","reportStart","reportEnd"])$(id)?.addEventListener("change",renderizarRelatorioLuvi);
+
+async function buscarCompromissosConsolidadosLuvi() {
+    const r = await fetch("/api/planejamento/relatorio");
+    if (!r.ok) throw new Error(await erro(r));
+    const items = await r.json();
+    const cr = await fetch("/api/cartoes");
+    if (!cr.ok) throw new Error(await erro(cr));
+    const cards = await cr.json(), parcelaIds = new Set(), invoices = [];
+    const byId = new Map(items.map(item=>[item.id,item]));
+    for (const card of cards) {
+      const fr = await fetch(`/api/cartoes/${card.id}/faturas`);
+      if (!fr.ok) throw new Error(await erro(fr));
+      for (const invoice of await fr.json()) {
+        const visible = invoice.itens.filter(item=>byId.has(item.compromissoId));
+        if (!visible.length) continue;
+        visible.forEach(item=>parcelaIds.add(item.compromissoId));
+        const first = byId.get(visible[0].compromissoId);
+        const total = visible.reduce((sum,item)=>sum+Number(item.valor),0);
+        invoices.push({id:`fatura-${card.id}-${invoice.competencia}`,cartaoId:card.id,competencia:invoice.competencia,
+          descricao:`Fatura ${card.nome} · ${invoice.competencia.slice(0,7).split('-').reverse().join('/')}`,
+          categoria:"Faturas de cartão",tipo:"DESPESA",contaId:invoice.paga ? (invoice.contaPagamentoId ?? first.contaId) : (card.contaPagamentoId ?? first.contaId),
+          contaNome:invoice.paga ? (contas.find(c=>c.id===invoice.contaPagamentoId)?.nome || first.contaNome) : first.contaNome,
+          vencimento:first.vencimento,valor:total,status:invoice.paga?"PAGO":"PENDENTE",dataPagamento:invoice.dataPagamento,valorEfetivo:invoice.paga?total:null});
+      }
+    }
+    return [...items.filter(item=>!parcelaIds.has(item.id)),...invoices];
+}
+
+// Avisos pessoais de despesas a vencer; exibidos dentro do aplicativo.
+let luviPreferencias=null, luviAvisos=[], luviAvisosRequest=0, luviAvisosErro="";
+async function iniciarAvisosLuvi(){
+ try{const r=await fetch('/api/preferencias');if(!r.ok)throw new Error(await erro(r));luviPreferencias=await r.json();await atualizarAvisosLuvi();}
+ catch(e){console.warn('Avisos indisponíveis',e);}
+}
+function selecionarAvisosLuvi(items,dias,today=hojeISO()){
+ const date=new Date(`${today}T12:00:00`);date.setDate(date.getDate()+dias);
+ const limite=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+ return items.filter(x=>x.tipo==='DESPESA'&&x.status==='PENDENTE'&&x.vencimento>=today&&x.vencimento<=limite).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+}
+async function atualizarAvisosLuvi(){
+ const request=++luviAvisosRequest;
+ if(!luviPreferencias?.avisosAtivos){luviAvisos=[];luviAvisosErro='';renderizarAvisosLuvi();return;}
+ try{
+  const items=await buscarCompromissosConsolidadosLuvi();if(request!==luviAvisosRequest)return;
+  luviAvisos=selecionarAvisosLuvi(items,luviPreferencias.avisosDias);luviAvisosErro='';
+ }catch(e){if(request!==luviAvisosRequest)return;luviAvisos=[];luviAvisosErro='Não foi possível atualizar os avisos. Tente abrir novamente.';console.warn(e);}
+ renderizarAvisosLuvi();
+}
+function renderizarAvisosLuvi(){
+ $('notificationsCount').textContent=String(luviAvisos.length);
+ $('notificationsBadge').classList.toggle('hidden',!luviAvisos.length);
+ $('notificationsBadge').setAttribute('aria-label',`${luviAvisos.length} contas a vencer`);
+ $('notificationsMessage').textContent=luviAvisosErro||(luviAvisos.length?`${luviAvisos.length} contas · hoje até os próximos ${luviPreferencias.avisosDias} dias`:'Nenhuma conta a vencer neste prazo.');
+ $('notificationsRows').innerHTML=luviAvisos.map(x=>`<div class="luvi-notification-row"><div><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)}</small></div><strong>${formatarMoeda(Number(x.valor))}</strong><button type="button" class="primary-button" data-notification-pay="${escaparHtml(String(x.id))}">Pagar</button></div>`).join('');
+ $('notificationsRows').querySelectorAll('[data-notification-pay]').forEach(button=>button.onclick=async()=>{
+  const item=luviAvisos.find(x=>String(x.id)===button.dataset.notificationPay);if(!item)return;
+  button.disabled=true;
+  try{if(item.cartaoId){await luviOpenCards();await luviOpenInvoice(`${item.cartaoId}|${item.competencia}`);}else pagarCompromissoLuvi(item.id,item);}
+  catch(e){await mensagem(e.message);}finally{button.disabled=false;}
+ });
+}
+async function abrirConfiguracoesLuvi(){
+ toggleMenu(false);fecharSubtelasPrincipais('settingsModal');abrirCamada('settingsModal');$('settingsMessage').textContent='Carregando...';$('settingsSave').disabled=true;
+ try{const r=await fetch('/api/preferencias');if(!r.ok)throw new Error(await erro(r));luviPreferencias=await r.json();$('settingsNotifications').checked=luviPreferencias.avisosAtivos;$('settingsDays').value=luviPreferencias.avisosDias;$('settingsDays').disabled=!luviPreferencias.avisosAtivos;$('settingsMessage').textContent='';$('settingsSave').disabled=false;}
+ catch(e){$('settingsMessage').textContent=e.message;}
+}
+$('settingsMenu')?.addEventListener('click',abrirConfiguracoesLuvi);
+$('settingsNotifications')?.addEventListener('change',()=>{$('settingsDays').disabled=!$('settingsNotifications').checked;});
+$('settingsForm')?.addEventListener('submit',async event=>{
+ event.preventDefault();const dias=Number($('settingsDays').value);
+ if(!Number.isInteger(dias)||dias<1||dias>365){$('settingsMessage').textContent='Informe de 1 a 365 dias.';return;}
+ $('settingsSave').disabled=true;
+ try{const r=await fetch('/api/preferencias',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({avisosAtivos:$('settingsNotifications').checked,avisosDias:dias})});if(!r.ok)throw new Error(await erro(r));luviPreferencias=await r.json();$('settingsMessage').textContent='Configurações salvas.';await atualizarAvisosLuvi();}
+ catch(e){$('settingsMessage').textContent=e.message;}finally{$('settingsSave').disabled=false;}
+});
+$('notificationsBadge')?.addEventListener('click',async()=>{abrirCamada('notificationsModal');$('notificationsMessage').textContent='Atualizando...';$('notificationsRows').innerHTML='';await atualizarAvisosLuvi();});
+window.addEventListener('focus',()=>{if(luviPreferencias?.avisosAtivos)atualizarAvisosLuvi();});

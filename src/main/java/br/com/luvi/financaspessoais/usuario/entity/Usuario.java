@@ -40,6 +40,17 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime dataCadastro;
 
+    @Column(name = "avisos_ativos", nullable = false)
+    private boolean avisosAtivos = false;
+
+    @Column(name = "avisos_dias", nullable = false)
+    private int avisosDias = 5;
+
+    public boolean isAvisosAtivos() { return avisosAtivos; }
+    public void setAvisosAtivos(boolean valor) { avisosAtivos = valor; }
+    public int getAvisosDias() { return avisosDias; }
+    public void setAvisosDias(int valor) { avisosDias = valor; }
+
     @PrePersist
     void pre() {
         if (dataCadastro == null) dataCadastro = LocalDateTime.now();
