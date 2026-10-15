@@ -1446,3 +1446,8 @@ body{background:var(--luvi-bg)}
 .topbar .user-menu-wrap{display:inline-flex;align-items:center;gap:6px;margin-left:auto}
 .user-menu-wrap .luvi-notification-badge{margin:0;flex-shrink:0}
 @media(max-width:700px){.topbar .user-menu-wrap{gap:4px}}
+
+/* LUVI: identificação visual das categorias integralmente quitadas. */
+.luvi-forecast-category.settled summary{background:#eef9f1;color:#245c3b}
+.luvi-forecast-category.settled{border-color:#c7e8d0}
+.luvi-category-check{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-left:8px;border-radius:50%;background:#198754;color:white;font-size:13px;font-weight:700;vertical-align:middle}

@@ -489,7 +489,7 @@ async function carregarCompromissosLuvi(){
          if(!visiveis.length)continue;
          visiveis.forEach(item=>ids.add(item.compromissoId));
          const referencia=luviCompromissos.find(c=>c.id===visiveis[0].compromissoId);
-         faturas.push({id:`fatura-${card.id}-${f.competencia}`,cartaoId:card.id,competencia:f.competencia,contaId:referencia.contaId,contaNome:card.nome,categoria:'Fatura de cartão',tipo:'DESPESA',descricao:`Fatura ${card.nome}`,valor:visiveis.reduce((v,x)=>v+Number(x.valor),0),vencimento:visiveis[0].vencimento,status:f.paga?'PAGO':'PENDENTE',dataPagamento:f.dataPagamento,valorEfetivo:f.paga?f.total:null});
+         faturas.push({id:`fatura-${card.id}-${f.competencia}`,cartaoId:card.id,competencia:f.competencia,contaId:f.paga?(f.contaPagamentoId??referencia.contaId):(card.contaPagamentoId??referencia.contaId),contaNome:card.nome,categoria:'Cartões de crédito',tipo:'DESPESA',descricao:`Fatura ${card.nome}`,valor:visiveis.reduce((v,x)=>v+Number(x.valor),0),vencimento:visiveis[0].vencimento,status:f.paga?'PAGO':'PENDENTE',dataPagamento:f.dataPagamento,valorEfetivo:f.paga?f.total:null});
        }
      }
      luviCompromissos=[...luviCompromissos.filter(c=>!ids.has(c.id)),...faturas];
@@ -750,7 +750,7 @@ function linhaCompromissoPrevisaoLuvi(x) { return `<div class="luvi-future-row">
 function agruparCategoriasPrevisaoLuvi(items) {
   const grupos = new Map();
   for (const item of items) {
-    const nome = item.cartaoId ? "Faturas de cartão" : (item.categoria || "Sem categoria");
+    const nome = item.cartaoId ? "Cartões de crédito" : (item.categoria || "Sem categoria");
     const key = item.cartaoId ? "DESPESA:cartoes" : `${item.tipo}:${item.categoriaId != null ? item.categoriaId : nome}`;
     if (!grupos.has(key)) grupos.set(key, {key, nome, tipo:item.tipo, items:[], pendente:0, previsto:0});
     const grupo = grupos.get(key);
@@ -762,8 +762,8 @@ function agruparCategoriasPrevisaoLuvi(items) {
 }
 function renderizarCategoriasPrevisaoLuvi(items, expandidas = new Set()) {
   if (!items.length) return '<div class="empty-state">Nenhum compromisso neste mês. Cadastre um lançamento futuro.</div>';
-  return agruparCategoriasPrevisaoLuvi(items).map(grupo=>`<details class="luvi-forecast-category ${grupo.tipo === "RECEITA" ? "income" : "expense"}" data-category-key="${escaparHtml(grupo.key)}" ${expandidas.has(grupo.key) ? "open" : ""}>
-    <summary><span class="luvi-forecast-category-name"><strong>${escaparHtml(grupo.nome)}</strong><small>${grupo.tipo === "RECEITA" ? "Receita" : "Despesa"} · ${grupo.items.length} ${grupo.items.length === 1 ? "registro" : "registros"}</small></span><span class="luvi-forecast-category-total"><strong>${formatarMoeda(grupo.pendente)}</strong><small>Pendente · Total previsto: ${formatarMoeda(grupo.previsto)}</small></span><svg class="luvi-forecast-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></summary>
+  return agruparCategoriasPrevisaoLuvi(items).map(grupo=>`<details class="luvi-forecast-category ${grupo.tipo === "RECEITA" ? "income" : "expense"} ${grupo.items.every(item=>item.status === "PAGO") ? "settled" : ""}" data-category-key="${escaparHtml(grupo.key)}" ${expandidas.has(grupo.key) ? "open" : ""}>
+    <summary><span class="luvi-forecast-category-name"><strong>${escaparHtml(grupo.nome)}</strong>${grupo.items.every(item=>item.status === "PAGO") ? `<span class="luvi-category-check" title="100% pago" aria-label="Categoria totalmente paga">✓</span>` : ""}<small>${grupo.tipo === "RECEITA" ? "Receita" : "Despesa"} · ${grupo.items.length} ${grupo.items.length === 1 ? "registro" : "registros"}</small></span><span class="luvi-forecast-category-total"><strong>${formatarMoeda(grupo.pendente)}</strong><small>Pendente · Total previsto: ${formatarMoeda(grupo.previsto)}</small></span><svg class="luvi-forecast-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></summary>
     <div class="luvi-forecast-category-items">${grupo.items.map(linhaCompromissoPrevisaoLuvi).join("")}</div>
   </details>`).join("");
 }
@@ -872,7 +872,7 @@ async function buscarCompromissosConsolidadosLuvi() {
         const total = visible.reduce((sum,item)=>sum+Number(item.valor),0);
         invoices.push({id:`fatura-${card.id}-${invoice.competencia}`,cartaoId:card.id,competencia:invoice.competencia,
           descricao:`Fatura ${card.nome} · ${invoice.competencia.slice(0,7).split('-').reverse().join('/')}`,
-          categoria:"Faturas de cartão",tipo:"DESPESA",contaId:invoice.paga ? (invoice.contaPagamentoId ?? first.contaId) : (card.contaPagamentoId ?? first.contaId),
+          categoria:"Cartões de crédito",tipo:"DESPESA",contaId:invoice.paga ? (invoice.contaPagamentoId ?? first.contaId) : (card.contaPagamentoId ?? first.contaId),
           contaNome:invoice.paga ? (contas.find(c=>c.id===invoice.contaPagamentoId)?.nome || first.contaNome) : first.contaNome,
           vencimento:first.vencimento,valor:total,status:invoice.paga?"PAGO":"PENDENTE",dataPagamento:invoice.dataPagamento,valorEfetivo:invoice.paga?total:null});
       }
