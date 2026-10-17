@@ -1451,3 +1451,13 @@ body{background:var(--luvi-bg)}
 .luvi-forecast-category.settled summary{background:#eef9f1;color:#245c3b}
 .luvi-forecast-category.settled{border-color:#c7e8d0}
 .luvi-category-check{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-left:8px;border-radius:50%;background:#198754;color:white;font-size:13px;font-weight:700;vertical-align:middle}
+
+/* Layout das ações: os botões usam as classes globais primary-button e secondary-button. */
+#luviCardModal .modal-body > .luvi-card-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.luvi-invoice-edit-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }

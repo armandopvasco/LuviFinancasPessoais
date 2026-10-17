@@ -229,6 +229,101 @@ public class CartaoController {
         return Map.of("compraId", compra.id, "parcelas", i);
     }
 
+    // Alterações de compras são atômicas e não podem reescrever faturas quitadas.
+    private List<Parcela> parcelasEditaveis(Compra compra) {
+        var itens = parcelas.findByCompraCartaoIdOrderByNumeroAsc(compra.id);
+        for (var item : itens) {
+            var cp = item.compromisso;
+            if (!"PENDENTE".equals(cp.getStatus())
+                    || pagamentos.findByCartaoIdAndCompetencia(compra.cartao.id,
+                            YearMonth.from(cp.getVencimento()).atDay(1)).isPresent())
+                throw new IllegalStateException("Esta compra possui parcela ou fatura paga e não pode ser alterada.");
+        }
+        return itens;
+    }
+
+    @GetMapping("/compras/{id}")
+    @Transactional(readOnly = true)
+    public Map<String, Object> detalharCompra(@PathVariable Long id, Authentication a) {
+        var compra = compras.findById(id).orElseThrow(() -> new IllegalArgumentException("Compra não encontrada."));
+        autorizado(compra.cartao.id, a);
+        var itens = parcelas.findByCompraCartaoIdOrderByNumeroAsc(id);
+        var saida = new LinkedHashMap<String, Object>();
+        saida.put("id", compra.id);
+        saida.put("cartaoId", compra.cartao.id);
+        saida.put("categoriaId", itens.get(0).compromisso.getCategoria().getId());
+        saida.put("descricao", compra.descricao);
+        saida.put("dataCompra", compra.dataCompra);
+        saida.put("total", compra.total);
+        saida.put("quantidadeParcelas", compra.quantidadeParcelas);
+        saida.put("parcelas", itens.stream().map(x -> Map.of("vencimento", x.compromisso.getVencimento(), "valor", x.compromisso.getValor())).toList());
+        return saida;
+    }
+
+    @PutMapping("/compras/{id}")
+    @Transactional
+    public Map<String, Object> editarCompra(@PathVariable Long id, @Valid @RequestBody NovaCompra pedido, Authentication a) {
+        var compra = compras.findById(id).orElseThrow(() -> new IllegalArgumentException("Compra não encontrada."));
+        autorizado(compra.cartao.id, a);
+        var novoCartao = autorizado(pedido.cartaoId(), a);
+        var atuais = parcelasEditaveis(compra);
+        if (atuais.size() != pedido.parcelas().size() || atuais.size() != pedido.quantidadeParcelas())
+            throw new IllegalArgumentException("Para alterar a quantidade de parcelas, exclua a compra e cadastre novamente.");
+        if (pedido.descricao().isBlank() || pedido.descricao().trim().length() > 200)
+            throw new IllegalArgumentException("Descrição inválida.");
+        if (pedido.total().scale() > 2 || pedido.parcelas().stream().anyMatch(x -> x.valor().scale() > 2))
+            throw new IllegalArgumentException("Use no máximo duas casas decimais.");
+        var soma = pedido.parcelas().stream().map(ParcelaPedido::valor).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (soma.compareTo(pedido.total()) != 0) throw new IllegalArgumentException("A soma das parcelas deve ser igual ao valor total.");
+        var u = usuario(a);
+        var categoria = categorias.obter(pedido.categoriaId(), u);
+        if (categoria.getTipo() != TipoLancamento.DESPESA) throw new IllegalArgumentException("Selecione uma categoria de despesa.");
+        var conta = novoCartao.contaPagamento;
+        if (conta == null) {
+            var acessiveis = contas.acessiveis(u);
+            if (acessiveis.isEmpty()) throw new IllegalArgumentException("Cadastre uma conta financeira.");
+            conta = acessiveis.get(0);
+        }
+        categorias.validarParaConta(categoria, conta.getId(), u);
+        LocalDate anterior = null;
+        for (var pp : pedido.parcelas()) {
+            if (anterior != null && !pp.vencimento().isAfter(anterior))
+                throw new IllegalArgumentException("As datas das parcelas devem ser crescentes.");
+            anterior = pp.vencimento();
+            if (pagamentos.findByCartaoIdAndCompetencia(novoCartao.id, YearMonth.from(pp.vencimento()).atDay(1)).isPresent())
+                throw new IllegalStateException("Não é possível mover uma parcela para uma fatura já paga.");
+        }
+        compra.cartao = novoCartao;
+        compra.descricao = pedido.descricao().trim();
+        compra.dataCompra = pedido.dataCompra();
+        compra.total = pedido.total();
+        compras.save(compra);
+        for (int i = 0; i < atuais.size(); i++) {
+            var cp = atuais.get(i).compromisso;
+            var pp = pedido.parcelas().get(i);
+            cp.setConta(conta);
+            cp.setCategoria(categoria);
+            cp.setDescricao(compra.descricao + " (" + (i + 1) + "/" + atuais.size() + ")");
+            cp.setValor(pp.valor());
+            cp.setVencimento(pp.vencimento());
+            compromissos.save(cp);
+        }
+        return Map.of("compraId", compra.id, "parcelas", atuais.size());
+    }
+
+    @DeleteMapping("/compras/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void excluirCompra(@PathVariable Long id, Authentication a) {
+        var compra = compras.findById(id).orElseThrow(() -> new IllegalArgumentException("Compra não encontrada."));
+        autorizado(compra.cartao.id, a);
+        var itens = parcelasEditaveis(compra);
+        parcelas.deleteAll(itens);
+        parcelas.flush();
+        for (var item : itens) compromissos.delete(item.compromisso);
+        compras.delete(compra);
+    }
+
     @GetMapping("/{id}/faturas")
     @Transactional(readOnly = true)
     public List<Map<String, Object>> faturas(@PathVariable Long id, Authentication a) {
@@ -254,6 +349,7 @@ public class CartaoController {
             for (var x : e.getValue()) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("compromissoId", x.compromisso.getId());
+                item.put("compraId", x.compra.id);
                 item.put("descricao", x.compra.descricao);
                 item.put("numero", x.numero);
                 item.put("quantidade", x.compra.quantidadeParcelas);
