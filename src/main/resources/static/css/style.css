@@ -1500,3 +1500,14 @@ body{background:var(--luvi-bg)}
   flex: 0 0 64px;
 }
 .luvi-color-editor { width: auto; max-width: 100%; }
+
+/* Relatório de despesas por categoria */
+.luvi-expense-switch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.luvi-expense-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.luvi-expense-filters label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.luvi-expense-filters input,.luvi-expense-filters select{min-width:0;width:100%;padding:10px;border:1px solid #d4dce6;border-radius:8px;background:#fff;font:inherit}
+.luvi-expense-bars{display:grid;gap:10px;margin:12px 0 24px}
+.luvi-expense-bar{display:grid;grid-template-columns:1fr auto;gap:6px 12px;text-align:left;padding:12px;border:1px solid #e0e7ef;border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.luvi-expense-track{grid-column:1/-1;height:9px;background:#e6edf5;border-radius:20px;overflow:hidden}
+.luvi-expense-track>span{display:block;height:100%;background:#2476ba;border-radius:20px}
+@media(max-width:650px){.luvi-expense-filters{grid-template-columns:1fr 1fr}}

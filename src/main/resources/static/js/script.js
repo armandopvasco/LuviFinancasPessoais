@@ -953,6 +953,85 @@ async function buscarCompromissosConsolidadosLuvi() {
     return [...items.filter(item=>!parcelaIds.has(item.id)),...invoices];
 }
 
+// Análise de despesas: parcelas por competência, despesas diretas por realização.
+let luviExpenseBase=[], luviExpenseCards=[], luviExpenseCategorySelected="", luviExpenseLoaded=false, luviExpenseDirectMonth='';
+function luviExpenseToggle(mode){
+ const expenses=mode==='expenses';
+ $('luviExpensePanel').classList.toggle('hidden',!expenses);
+ $('luviCommitmentsPanel').classList.toggle('hidden',expenses);
+ $('luviReportExpensesTab').className=expenses?'primary-button':'secondary-button';
+ $('luviReportCommitmentsTab').className=expenses?'secondary-button':'primary-button';
+ $('luviReportExpensesTab').setAttribute('aria-pressed',String(expenses));
+ $('luviReportCommitmentsTab').setAttribute('aria-pressed',String(!expenses));
+ $('reportRefresh').textContent=expenses?'Atualizar análise':'Atualizar';
+ $('reportPrint').classList.toggle('hidden',expenses);
+ $('reportsTitle').textContent=expenses?'Relatórios · Análise de despesas':'Relatórios · Compromissos';
+ if(expenses&&!luviExpenseLoaded)luviLoadExpenses();
+}
+$('luviReportCommitmentsTab')?.addEventListener('click',()=>luviExpenseToggle('commitments'));
+$('luviReportExpensesTab')?.addEventListener('click',()=>luviExpenseToggle('expenses'));
+$('reportRefresh')?.addEventListener('click',()=>{if(!$('luviExpensePanel').classList.contains('hidden'))luviLoadExpenses();});
+async function luviLoadExpenses(){
+ const message=$('luviExpenseMessage');message.textContent='Carregando despesas...';
+ try{
+  const [r,cr]=await Promise.all([fetch('/api/planejamento/relatorio'),fetch('/api/cartoes')]);
+  if(!r.ok)throw new Error(await erro(r));if(!cr.ok)throw new Error(await erro(cr));
+  const commitments=await r.json(),cards=await cr.json();
+  const invoices=await Promise.all(cards.map(async c=>{const res=await fetch(`/api/cartoes/${c.id}/faturas`);if(!res.ok)throw new Error(await erro(res));return {card:c,invoices:await res.json()};}));
+  const cardCommitmentIds=new Set();const cardExpenses=[];
+  invoices.forEach(({card,invoices})=>invoices.forEach(invoice=>(invoice.itens||[]).forEach(item=>{
+   cardCommitmentIds.add(String(item.compromissoId));
+   cardExpenses.push({id:`cartao-${card.id}-${item.compromissoId}`,origem:'CARTOES',cartaoId:String(card.id),cartaoNome:card.nome,
+    descricao:`${item.descricao}${item.quantidade>1?` (${item.numero}/${item.quantidade})`:''}`,
+    categoria:item.categoria||'Sem categoria',valor:Number(item.valor),mes:String(invoice.competencia).slice(0,7),data:item.vencimento});
+  })));
+  // Não somar os compromissos das parcelas novamente como despesas diretas.
+  // As despesas diretas vêm do extrato efetivo, não dos compromissos (evita duplicar pagamentos).
+  luviExpenseBase=cardExpenses;luviExpenseDirectMonth='';luviExpenseCards=cards;luviExpenseLoaded=true;
+  const cardSel=$('luviExpenseCard'),prior=cardSel.value;
+  cardSel.innerHTML='<option value="">Todos os cartões</option>'+cards.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
+  cardSel.value=cards.some(c=>String(c.id)===prior)?prior:'';
+  if(!$('luviExpenseMonth').value)$('luviExpenseMonth').value=hojeISO().slice(0,7);
+  await luviFetchDirectExpenses();
+ }catch(e){message.textContent=`Não foi possível carregar a análise: ${e.message}`;}
+}
+async function luviFetchDirectExpenses(){
+ const month=$('luviExpenseMonth').value;
+ if(!month)return luviRenderExpenses();
+ if(luviExpenseDirectMonth===month)return luviRenderExpenses();
+ const [year,number]=month.split('-');
+ const r=await fetch(`/api/lancamentos?ano=${encodeURIComponent(year)}&mes=${encodeURIComponent(Number(number))}`);
+ if(!r.ok)throw new Error(await erro(r));
+ const rows=await r.json();
+ const direct=rows.filter(x=>x.tipo==='DESPESA'&&
+   !/^pagamento fatura /i.test(String(x.descricao||''))&&
+   !/pagamento de fatura/i.test(String(x.categoria||'')))
+   .map(x=>({id:`direta-${x.id}`,origem:'DIRETAS',cartaoId:'',cartaoNome:x.contaNome||'Conta financeira',
+    descricao:x.descricao,categoria:x.categoria||'Sem categoria',valor:Number(x.valor),mes:month,data:x.data}));
+ luviExpenseBase=[...luviExpenseBase.filter(x=>x.origem==='CARTOES'),...direct];
+ luviExpenseDirectMonth=month;luviRenderExpenses();
+}
+function luviRenderExpenses(){
+ const month=$('luviExpenseMonth').value,view=$('luviExpenseView').value,card=$('luviExpenseCard').value;
+ $('luviExpenseCard').disabled=view==='DIRETAS';
+ const base=luviExpenseBase.filter(x=>x.mes===month&&(view==='CONSOLIDADO'||x.origem===view)&&(x.origem!=='CARTOES'||!card||x.cartaoId===card));
+ const category=$('luviExpenseCategory'),old=category.value;
+ const names=[...new Set(base.map(x=>x.categoria))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ category.innerHTML='<option value="">Todas as categorias</option>'+names.map(n=>`<option value="${escaparHtml(n)}">${escaparHtml(n)}</option>`).join('');
+ category.value=names.includes(old)?old:'';
+ const filtered=base.filter(x=>!category.value||x.categoria===category.value);
+ const total=filtered.reduce((v,x)=>v+x.valor,0),direct=filtered.filter(x=>x.origem==='DIRETAS').reduce((v,x)=>v+x.valor,0),credit=total-direct;
+ $('luviExpenseSummary').innerHTML=`<div><small>Total de despesas</small><strong>${formatarMoeda(total)}</strong></div><div><small>Despesas diretas</small><strong>${formatarMoeda(direct)}</strong></div><div><small>Cartões</small><strong>${formatarMoeda(credit)}</strong></div>`;
+ const groups=[...filtered.reduce((m,x)=>(m.set(x.categoria,(m.get(x.categoria)||0)+x.valor),m),new Map())].sort((a,b)=>b[1]-a[1]);
+ $('luviExpenseBars').innerHTML=groups.length?groups.map(([name,value])=>`<button type="button" class="luvi-expense-bar" data-luvi-expense-category="${escaparHtml(name)}"><span>${escaparHtml(name)}</span><strong>${formatarMoeda(value)}</strong><span class="luvi-expense-track"><span style="width:${total>0?Math.min(100,100*value/total):0}%"></span></span></button>`).join(''):'<p class="luvi-report-note">Nenhuma despesa encontrada neste período.</p>';
+ $('luviExpenseDetailsTitle').textContent=category.value?`Lançamentos · ${category.value}`:'Lançamentos do período';
+ $('luviExpenseRows').innerHTML=filtered.sort((a,b)=>String(a.data).localeCompare(String(b.data))).map(x=>`<article class="luvi-report-row"><div><strong>${escaparHtml(x.descricao)}</strong><small>${escaparHtml(x.categoria)} · ${escaparHtml(x.cartaoNome)}</small></div><span>${formatarData(x.data)}</span><strong class="valor-despesa">${formatarMoeda(x.valor)}</strong><span>${x.origem==='CARTOES'?'Parcela do cartão':'Despesa realizada'}</span></article>`).join('');
+ $('luviExpenseMessage').textContent=`${filtered.length} lançamentos · ${month?month.split('-').reverse().join('/'):''}. Clique numa categoria para detalhar.`;
+ $('luviExpenseBars').querySelectorAll('[data-luvi-expense-category]').forEach(b=>b.addEventListener('click',()=>{category.value=b.dataset.luviExpenseCategory;luviRenderExpenses();}));
+}
+$('luviExpenseMonth')?.addEventListener('change',()=>luviFetchDirectExpenses().catch(e=>{$('luviExpenseMessage').textContent=e.message;}));
+for(const id of ['luviExpenseView','luviExpenseCard','luviExpenseCategory'])$(id)?.addEventListener('change',luviRenderExpenses);
+
 // Avisos pessoais de despesas a vencer; exibidos dentro do aplicativo.
 let luviPreferencias=null, luviAvisos=[], luviAvisosRequest=0, luviAvisosErro="";
 async function iniciarAvisosLuvi(){
