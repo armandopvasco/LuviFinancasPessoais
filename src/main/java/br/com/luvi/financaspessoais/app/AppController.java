@@ -40,6 +40,7 @@ public class AppController {
                                                     .filter(meusGids::contains)
                                                     .toList();
                                     return Map.<String, Object>of(
+                                            "cor", c.getCor() == null ? "" : c.getCor(),
                                             "id",
                                             c.getId(),
                                             "nome",
@@ -84,14 +85,14 @@ public class AppController {
 
     @PostMapping("/contas")
     public Map<String, Object> criarConta(@RequestBody Map<String, String> b, Authentication a) {
-        var c = cs.criar(b.get("nome"), b.get("tipo"), us.atual(a.getName()));
+        var c = cs.criar(b.get("nome"), b.get("tipo"), b.get("cor"), us.atual(a.getName()));
         return Map.of("id", c.getId(), "nome", c.getNome());
     }
 
     @PutMapping("/contas/{id}")
     public Map<String, Object> alterarConta(
             @PathVariable Long id, @RequestBody Map<String, String> b, Authentication a) {
-        var c = cs.alterar(id, b.get("nome"), b.get("tipo"), us.atual(a.getName()));
+        var c = cs.alterar(id, b.get("nome"), b.get("tipo"), b.get("cor"), us.atual(a.getName()));
         return Map.of("id", c.getId(), "nome", c.getNome());
     }
 

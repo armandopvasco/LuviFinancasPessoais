@@ -63,6 +63,7 @@ public class CartaoController {
     public record NovoCartao(
             @NotBlank String nome,
             Long contaPagamentoId,
+            String cor,
             @Min(1) @Max(28) int fechamento,
             @Min(1) @Max(28) int vencimento,
             @DecimalMin("0.00") BigDecimal limiteCredito) {}
@@ -105,6 +106,7 @@ public class CartaoController {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", c.id);
         m.put("nome", c.nome);
+        m.put("cor", c.cor);
         m.put("contaPagamentoId", c.contaPagamento == null ? null : c.contaPagamento.getId());
         m.put("fechamento", c.fechamento);
         m.put("vencimento", c.vencimento);
@@ -135,6 +137,7 @@ public class CartaoController {
         if (p.nome().trim().length() > 120) throw new IllegalArgumentException("Nome muito longo.");
         var c = new Cartao();
         c.nome = p.nome().trim();
+        c.cor = validarCor(p.cor());
         c.proprietario = u;
         if (p.contaPagamentoId() != null) {
             if (!contas.podeAcessar(p.contaPagamentoId(), u))
@@ -144,6 +147,33 @@ public class CartaoController {
         c.fechamento = p.fechamento();
         c.vencimento = p.vencimento();
         c.limiteCredito = p.limiteCredito();
+        return dto(cartoes.save(c));
+    }
+
+    private String validarCor(String cor) {
+        if (cor == null || cor.isBlank()) return "#64748B";
+        if (!cor.matches("#[0-9a-fA-F]{6}"))
+            throw new IllegalArgumentException("Cor inválida. Use o formato #RRGGBB.");
+        return cor.toUpperCase(Locale.ROOT);
+    }
+
+    @PutMapping("/{id}")
+    @Transactional
+    public Map<String, Object> atualizar(@PathVariable Long id,
+            @Valid @RequestBody NovoCartao p, Authentication a) {
+        Cartao c = autorizado(id, a);
+        c.nome = p.nome().trim();
+        if (c.nome.length() > 120) throw new IllegalArgumentException("Nome muito longo.");
+        c.cor = validarCor(p.cor());
+        c.fechamento = p.fechamento();
+        c.vencimento = p.vencimento();
+        c.limiteCredito = p.limiteCredito();
+        if (p.contaPagamentoId() == null) c.contaPagamento = null;
+        else {
+            if (!contas.podeAcessar(p.contaPagamentoId(), usuario(a)))
+                throw new SecurityException("Conta não permitida.");
+            c.contaPagamento = contasRepo.findById(p.contaPagamentoId()).orElseThrow();
+        }
         return dto(cartoes.save(c));
     }
 
@@ -229,15 +259,13 @@ public class CartaoController {
         return Map.of("compraId", compra.id, "parcelas", i);
     }
 
-    // Alterações de compras são atômicas e não podem reescrever faturas quitadas.
+    // Pagamentos de fatura não bloqueiam correções: o saldo é sempre recalculado.
     private List<Parcela> parcelasEditaveis(Compra compra) {
-        var itens = parcelas.findByCompraCartaoIdOrderByNumeroAsc(compra.id);
+        var itens = parcelas.findByCompraIdOrderByNumeroAsc(compra.id);
         for (var item : itens) {
             var cp = item.compromisso;
-            if (!"PENDENTE".equals(cp.getStatus())
-                    || pagamentos.findByCartaoIdAndCompetencia(compra.cartao.id,
-                            YearMonth.from(cp.getVencimento()).atDay(1)).isPresent())
-                throw new IllegalStateException("Esta compra possui parcela ou fatura paga e não pode ser alterada.");
+            if (!"PENDENTE".equals(cp.getStatus()))
+                throw new IllegalStateException("Esta parcela foi quitada individualmente e não pode ser alterada.");
         }
         return itens;
     }
@@ -247,7 +275,7 @@ public class CartaoController {
     public Map<String, Object> detalharCompra(@PathVariable Long id, Authentication a) {
         var compra = compras.findById(id).orElseThrow(() -> new IllegalArgumentException("Compra não encontrada."));
         autorizado(compra.cartao.id, a);
-        var itens = parcelas.findByCompraCartaoIdOrderByNumeroAsc(id);
+        var itens = parcelas.findByCompraIdOrderByNumeroAsc(id);
         var saida = new LinkedHashMap<String, Object>();
         saida.put("id", compra.id);
         saida.put("cartaoId", compra.cartao.id);
@@ -290,8 +318,6 @@ public class CartaoController {
             if (anterior != null && !pp.vencimento().isAfter(anterior))
                 throw new IllegalArgumentException("As datas das parcelas devem ser crescentes.");
             anterior = pp.vencimento();
-            if (pagamentos.findByCartaoIdAndCompetencia(novoCartao.id, YearMonth.from(pp.vencimento()).atDay(1)).isPresent())
-                throw new IllegalStateException("Não é possível mover uma parcela para uma fatura já paga.");
         }
         compra.cartao = novoCartao;
         compra.descricao = pedido.descricao().trim();
@@ -329,22 +355,23 @@ public class CartaoController {
     public List<Map<String, Object>> faturas(@PathVariable Long id, Authentication a) {
         var c = autorizado(id, a);
         var comprasCartao = compras.findByCartaoId(id);
-        if (comprasCartao.isEmpty()) return List.of();
         var ids = comprasCartao.stream().map(x -> x.id).toList();
-        var todos = parcelas.findByCompraCartaoIdIn(ids);
+        var todos = ids.isEmpty() ? List.<Parcela>of() : parcelas.findByCompraIdIn(ids);
         Map<YearMonth, List<Parcela>> grupos = new TreeMap<>();
         for (var p : todos)
-            grupos.computeIfAbsent(
-                            YearMonth.from(p.compromisso.getVencimento()), k -> new ArrayList<>())
-                    .add(p);
+            grupos.computeIfAbsent(YearMonth.from(p.compromisso.getVencimento()), k -> new ArrayList<>()).add(p);
+        var historico = pagamentos.findByCartaoIdOrderByCompetenciaAscIdAsc(id);
+        for (var pg : historico) grupos.computeIfAbsent(YearMonth.from(pg.competencia), k -> new ArrayList<>());
+        BigDecimal acumulado = BigDecimal.ZERO;
         List<Map<String, Object>> saida = new ArrayList<>();
         for (var e : grupos.entrySet()) {
             var competencia = e.getKey().atDay(1);
-            var pg = pagamentos.findByCartaoIdAndCompetencia(id, competencia);
-            var total =
-                    e.getValue().stream()
-                            .map(x -> x.compromisso.getValor())
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            var pagamentosMes = historico.stream().filter(x -> x.competencia.equals(competencia)).toList();
+            var total = e.getValue().stream().map(x -> x.compromisso.getValor())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            var totalPago = pagamentosMes.stream().map(x -> x.valor).reduce(BigDecimal.ZERO, BigDecimal::add);
+            var saldoAnterior = acumulado;
+            acumulado = acumulado.add(total).subtract(totalPago);
             List<Map<String, Object>> itens = new ArrayList<>();
             for (var x : e.getValue()) {
                 Map<String, Object> item = new LinkedHashMap<>();
@@ -361,9 +388,15 @@ public class CartaoController {
             Map<String, Object> f = new LinkedHashMap<>();
             f.put("competencia", competencia);
             f.put("total", total);
-            f.put("paga", pg.isPresent());
-            f.put("dataPagamento", pg.map(x -> x.dataPagamento).orElse(null));
-            f.put("contaPagamentoId", pg.map(x -> x.conta.getId()).orElse(null));
+            f.put("totalPago", totalPago);
+            f.put("saldoAnterior", saldoAnterior);
+            f.put("saldo", acumulado.max(BigDecimal.ZERO));
+            f.put("credito", acumulado.negate().max(BigDecimal.ZERO));
+            f.put("paga", acumulado.signum() <= 0);
+            f.put("dataPagamento", pagamentosMes.isEmpty() ? null : pagamentosMes.get(pagamentosMes.size()-1).dataPagamento);
+            f.put("contaPagamentoId", pagamentosMes.isEmpty() ? null : pagamentosMes.get(pagamentosMes.size()-1).conta.getId());
+            f.put("pagamentos", pagamentosMes.stream().map(x -> Map.of("id", x.id,
+                    "data", x.dataPagamento, "valor", x.valor, "contaId", x.conta.getId())).toList());
             f.put("itens", itens);
             saida.add(f);
         }
@@ -382,14 +415,12 @@ public class CartaoController {
         var u = usuario(a);
         var ym = YearMonth.of(ano, mes);
         var competencia = ym.atDay(1);
-        if (pagamentos.findByCartaoIdAndCompetencia(id, competencia).isPresent())
-            throw new IllegalStateException("Fatura já paga.");
         if (!contas.podeAcessar(pedido.contaId(), u))
             throw new SecurityException("Conta não permitida.");
         var comprasCartao = compras.findByCartaoId(id);
         if (comprasCartao.isEmpty())
             throw new IllegalArgumentException("Não há compras nesta fatura.");
-        var todas = parcelas.findByCompraCartaoIdIn(comprasCartao.stream().map(x -> x.id).toList());
+        var todas = parcelas.findByCompraIdIn(comprasCartao.stream().map(x -> x.id).toList());
         var itens =
                 todas.stream()
                         .filter(x -> YearMonth.from(x.compromisso.getVencimento()).equals(ym))
@@ -399,9 +430,6 @@ public class CartaoController {
                 itens.stream()
                         .map(x -> x.compromisso.getValor())
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (pedido.valor().compareTo(total) != 0)
-            throw new IllegalArgumentException(
-                    "Nesta versão, o pagamento deve ser integral e sem ajustes.");
         for (var x : itens)
             if (!"PENDENTE".equals(x.compromisso.getStatus()))
                 throw new IllegalStateException(
@@ -415,7 +443,7 @@ public class CartaoController {
                                 TipoLancamento.DESPESA,
                                 "Pagamento fatura " + cartao.nome + " " + ym,
                                 categoria.getId(),
-                                total,
+                                pedido.valor(),
                                 pedido.data(),
                                 pedido.contaId()),
                         u);
@@ -425,15 +453,10 @@ public class CartaoController {
         pg.competencia = competencia;
         pg.conta = contasRepo.findById(pedido.contaId()).orElseThrow();
         pg.dataPagamento = pedido.data();
-        pg.valor = total;
+        pg.valor = pedido.valor;
         pg.lancamento = lancamento;
         pagamentos.saveAndFlush(pg);
-        for (var x : itens) {
-            x.compromisso.setStatus("PAGO");
-            x.compromisso.setDataPagamento(pedido.data());
-            x.compromisso.setValorEfetivo(x.compromisso.getValor());
-            compromissos.save(x.compromisso);
-        }
-        return Map.of("total", total, "parcelasQuitadas", itens.size());
+        return Map.of("valorPago", pedido.valor(), "pagamentoId", pg.id);
+
     }
 }

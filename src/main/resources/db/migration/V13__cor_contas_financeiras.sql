@@ -1,0 +1,1 @@
+ALTER TABLE contas_financeiras ADD COLUMN IF NOT EXISTS cor VARCHAR(7);

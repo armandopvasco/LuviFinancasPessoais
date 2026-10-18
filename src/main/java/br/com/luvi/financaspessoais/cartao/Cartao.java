@@ -15,6 +15,9 @@ public class Cartao {
     @Column(nullable = false, length = 120)
     public String nome;
 
+    @Column(length = 7)
+    public String cor;
+
     @ManyToOne
     @JoinColumn(name = "conta_pagamento_id")
     public ContaFinanceira contaPagamento;

@@ -1,0 +1,28 @@
+LUVI FINANÇAS — AJUSTES DE FATURA (versão para TESTE LOCAL)
+
+Conteúdo: pasta main/ (substituir src/main/), pom.xml original fornecido, notas.
+
+ANTES DE TESTAR:
+1. Faça backup completo do PostgreSQL de testes.
+2. Pare a aplicação. Substitua src/main pela pasta main do ZIP.
+3. Execute no IntelliJ com o mesmo pom.xml; Flyway aplicará V16.
+4. Não aplique na produção sem testes e backup.
+
+MUDANÇAS:
+- Pagamentos múltiplos, parciais e acima do valor da fatura.
+- Crédito carregado cronologicamente para competências seguintes do MESMO cartão.
+- Correções de compras recalculam ambos os cartões; pagamentos bancários permanecem.
+- Parcelas antes marcadas PAGO pelo pagamento de fatura são redefinidas como PENDENTE
+  na migration V16, sem apagar os lançamentos financeiros.
+- A interface permite informar o valor pago e mostra histórico, saldo e crédito.
+- Preservação do cartão selecionado ao recarregar a lista de cartões.
+
+LIMITAÇÕES / TESTES OBRIGATÓRIOS:
+- Não foi possível executar Maven ou integração com PostgreSQL neste ambiente.
+- Verifique lançamentos que tenham sido pagos individualmente antes da migração:
+  a V16 redefine parcelas PAGO nas competências que possuem pagamento de fatura.
+- Valide datas de fechamento, categorias, pagamentos e remanejamentos em sua base de testes.
+- Os cálculos atuais são por competência (mês da parcela/pagamento), não por
+  compensação bancária em data diária.
+- Pagamentos de faturas não são editáveis/excluíveis diretamente nesta versão.
+- O filtro de faturas quitadas usa o saldo acumulado após a competência.

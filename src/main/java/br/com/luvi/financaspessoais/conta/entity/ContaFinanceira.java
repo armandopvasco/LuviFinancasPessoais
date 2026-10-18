@@ -14,6 +14,12 @@ public class ContaFinanceira {
     @Column(nullable = false, length = 120)
     private String nome;
 
+    @Column(length = 7)
+    private String cor;
+
+    public String getCor() { return cor; }
+    public void setCor(String cor) { this.cor = cor; }
+
     @Column(nullable = false, length = 30)
     private String tipo = "BANCO";
 

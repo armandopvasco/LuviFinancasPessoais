@@ -55,17 +55,18 @@ public class ContaService {
     }
 
     @Transactional
-    public ContaFinanceira criar(String nome, String tipo, Usuario u) {
+    public ContaFinanceira criar(String nome, String tipo, String cor, Usuario u) {
         validar(nome, tipo);
         ContaFinanceira c = new ContaFinanceira();
         c.setNome(nome.trim());
         c.setTipo(tipo);
+        c.setCor(validarCor(cor));
         c.setProprietario(u);
         return contas.save(c);
     }
 
     @Transactional
-    public ContaFinanceira alterar(Long id, String nome, String tipo, Usuario u) {
+    public ContaFinanceira alterar(Long id, String nome, String tipo, String cor, Usuario u) {
         validar(nome, tipo);
         ContaFinanceira c =
                 contas.findById(id)
@@ -74,6 +75,7 @@ public class ContaService {
             throw new SecurityException("Somente o proprietário pode alterar esta conta.");
         c.setNome(nome.trim());
         c.setTipo(tipo);
+        c.setCor(validarCor(cor));
         return c;
     }
 
@@ -140,6 +142,13 @@ public class ContaService {
         vinculos.findByContaId(cid).stream()
                 .filter(x -> x.getGrupo().getId().equals(gid))
                 .forEach(vinculos::delete);
+    }
+
+    private String validarCor(String cor) {
+        if (cor == null || cor.isBlank()) return null;
+        if (!cor.matches("#[0-9a-fA-F]{6}"))
+            throw new IllegalArgumentException("Selecione uma cor válida para a conta.");
+        return cor.toUpperCase(java.util.Locale.ROOT);
     }
 
     private void validar(String nome, String tipo) {

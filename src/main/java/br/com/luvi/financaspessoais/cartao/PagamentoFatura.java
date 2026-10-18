@@ -7,9 +7,7 @@ import java.time.LocalDate;
 import java.math.BigDecimal;
 
 @Entity
-@Table(
-        name = "pagamentos_fatura",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"cartao_id", "competencia"}))
+@Table(name = "pagamentos_fatura")
 public class PagamentoFatura {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

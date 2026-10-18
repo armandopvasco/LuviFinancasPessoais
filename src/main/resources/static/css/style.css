@@ -1461,3 +1461,42 @@ body{background:var(--luvi-bg)}
   gap: 10px;
 }
 .luvi-invoice-edit-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+
+/* LUVI: seletor nativo com identidade visual, sem carrossel. */
+.luvi-account-select-row{display:flex;align-items:center;gap:9px;width:100%;min-width:0;}
+.luvi-account-select-row > select{flex:1;min-width:0;width:100%;}
+.luvi-account-logo{flex:0 0 43px;width:43px;height:43px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:11px;background:var(--luvi-logo-color,#285681);color:#fff;font-size:11px;font-weight:800;letter-spacing:-.25px;text-align:center;line-height:1.1;overflow:hidden;box-shadow:0 1px 4px #112b4526;}
+.luvi-account-logo[data-wallet="true"]{font-size:24px;}
+
+/* Identificação visual compacta, sem textos dentro do indicador */
+.luvi-account-logo{font-size:0!important;letter-spacing:normal;box-shadow:0 1px 4px #112b4526;}
+.luvi-color-editor{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.luvi-color-editor input[type=color]{width:54px;height:42px;padding:3px;cursor:pointer;border-radius:10px;}
+.luvi-color-editor span{font-size:13px;color:var(--text-muted,#64748b);}
+
+/* Identificação persistida da conta nas listas desktop e mobile. */
+.luvi-account-name-cell{display:flex;align-items:center;gap:10px;min-width:0}
+.luvi-account-name-cell strong{overflow-wrap:anywhere}
+.luvi-account-color-marker{display:inline-block;flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.12);box-shadow:0 1px 2px rgba(0,0,0,.09)}
+
+/* Identidade visual própria de cada cartão de crédito */
+.luvi-card-heading{display:flex;align-items:center;gap:10px}
+.luvi-card-color{display:inline-block;flex:none;width:25px;height:25px;border-radius:7px;border:1px solid rgba(0,0,0,.1)}
+#luviCardColor{width:64px;height:43px;padding:4px;cursor:pointer;border:1px solid #cbd5e1;border-radius:8px}
+
+/* Padronização dos seletores de cor de contas e cartões */
+#accountColor, #luviCardColor {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  height: 43px !important;
+  min-height: 43px !important;
+  padding: 4px !important;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 0 0 64px;
+}
+.luvi-color-editor { width: auto; max-width: 100%; }
