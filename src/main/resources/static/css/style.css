@@ -1511,3 +1511,65 @@ body{background:var(--luvi-bg)}
 .luvi-expense-track{grid-column:1/-1;height:9px;background:#e6edf5;border-radius:20px;overflow:hidden}
 .luvi-expense-track>span{display:block;height:100%;background:#2476ba;border-radius:20px}
 @media(max-width:650px){.luvi-expense-filters{grid-template-columns:1fr 1fr}}
+
+/* LUVI V19 - experiência móvel e alertas de vencimento */
+.luvi-notification-row.luvi-notification-overdue{background:#fff0f0;border:1px solid #f3c9cd;border-radius:13px;padding:12px;margin:7px 0;color:#7f1d1d}
+.luvi-notification-overdue small{color:#a33743}
+.luvi-welcome-splash{position:fixed;inset:0;z-index:20000;background:#102f59;display:flex;align-items:center;justify-content:center;color:white;transition:opacity .24s ease,visibility .24s ease}
+.luvi-welcome-splash.luvi-splash-done{opacity:0;visibility:hidden;pointer-events:none}
+.luvi-welcome-inner{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px;text-align:center}
+.luvi-welcome-inner img{width:165px;height:95px;object-fit:cover;object-position:center;border-radius:16px}
+.luvi-welcome-inner h1{margin:8px 0 0;font-size:25px}
+.luvi-welcome-inner p{margin:0;color:#e0eaf5}
+.luvi-welcome-inner small{color:#d2deed}
+.luvi-welcome-spinner{display:block;width:28px;height:28px;border:3px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:luvi-spin .85s linear infinite;margin:12px 0}
+@keyframes luvi-spin{to{transform:rotate(360deg)}}
+.luvi-header-logo{display:flex;align-items:center;justify-content:center;width:96px;height:42px;flex:0 0 96px;overflow:hidden;border-radius:9px;background:#d8eafb}
+.luvi-header-logo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.topbar .topbar-brand{min-width:0;flex:1}
+.topbar .view-context-button{flex:1;min-width:0;max-width:none}
+.topbar .view-context-button #contextoTitulo{max-width:none;min-width:0;flex:1}
+@media(max-width:700px){
+ .topbar .topbar-brand{min-width:0;flex:1;gap:7px}
+ .topbar .luvi-header-logo{width:83px;flex-basis:83px;height:38px}
+ .topbar .view-context-button{min-width:0;flex:1;max-width:none;padding:8px 7px}
+ .topbar .view-context-button #contextoTitulo{max-width:none;min-width:0;flex:1}
+ .mobile-home-intro{display:none!important}
+ .mobile-quick-actions{display:flex!important;justify-content:center;align-items:flex-start;gap:clamp(20px,9vw,72px);max-width:none;margin:18px auto 20px}
+ .mobile-quick-actions button{width:116px;flex:0 1 116px}
+ .mobile-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(prefers-reduced-motion:reduce){.luvi-welcome-spinner{animation:none}.luvi-welcome-splash{transition:none}}
+
+/* LUVI V19.1 — padronização visual solicitada (somente CSS) */
+/* Todos os avisos possuem a mesma caixa e alinhamento. */
+.luvi-notification-row{
+  background:#fff;
+  border:1px solid #e0e7ef;
+  border-radius:13px;
+  padding:12px;
+  margin:7px 0;
+  color:#1f2937;
+}
+.luvi-notification-row.luvi-notification-overdue{
+  background:#fff0f0;
+  border-color:#f3c9cd;
+  color:#7f1d1d;
+}
+/* Espaço entre a visão selecionada e a bolinha de notificações. */
+.topbar .user-menu-wrap{margin-left:12px;flex-shrink:0}
+@media(max-width:700px){.topbar .user-menu-wrap{margin-left:9px}}
+/* Centraliza o grupo Realizado/Previsto sem alterar os eventos dos botões. */
+.luvi-planning-toggle{margin-left:auto;margin-right:auto;width:min(100%,420px)}
+
+/* V19.2 — respiro responsivo entre o seletor de visão e notificações.
+   O seletor cresce automaticamente quando o alerta está oculto. */
+.topbar .topbar-brand { flex: 1 1 auto; min-width: 0; }
+.topbar .view-context-button { flex: 1 1 auto; min-width: 0; max-width: none; }
+.topbar .user-menu-wrap { flex: 0 0 auto; margin-left: 20px !important; gap: 9px; }
+@media (max-width: 700px) {
+  .topbar .user-menu-wrap { margin-left: 16px !important; gap: 8px; }
+}
+@media (max-width: 390px) {
+  .topbar .user-menu-wrap { margin-left: 12px !important; gap: 6px; }
+}

@@ -78,7 +78,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("novoLancamento").onclick=abrirNovo; $("novaTransferencia").onclick=abrirTransferencia;
   $("mobileNew").onclick=abrirNovo; $("mobileTransfer").onclick=abrirTransferencia;
   $("mobileNavDashboard").onclick=()=>{abrirDashboard();marcarNavMobile("dashboard")};
-  $("mobileNavHome").onclick=()=>{fecharSubtelasPrincipais();window.scrollTo({top:0,behavior:"smooth"});marcarNavMobile("home")};
+  $("mobileNavHome").onclick=luviIrParaInicio;
+  $("mobileNavCards").onclick=async()=>{luviFecharTelasDireto();await luviOpenCards();marcarNavMobile("cards")};
 
   $("mobileNavMore").onclick=()=>{toggleMenu(true);marcarNavMobile("more")};
 
@@ -104,11 +105,15 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("copyInviteButton").onclick=()=>copiarConvite(false);
   $("fecharMessage").onclick=$("messageCancel").onclick=()=>resolverMensagem(false); $("messageOk").onclick=()=>resolverMensagem(true);
   window.luviLayerOrder=window.luviLayerOrder||0;
+  const splashInicio=Date.now();
+  let falhaInicial=null;
   try { await carregarContexto(); await carregarCategorias(); await carregarDadosMes(); await iniciarAvisosLuvi(); }
-  catch (e) { console.error("Falha ao carregar os dados iniciais", e); await mensagem("Não foi possível carregar os dados. Atualize a página para tentar novamente."); }
+  catch (e) { console.error("Falha ao carregar os dados iniciais", e); falhaInicial=e; }
+  finally { const restante=Math.max(0,700-(Date.now()-splashInicio)); setTimeout(()=>$("luviWelcomeSplash")?.classList.add("luvi-splash-done"),restante); }
+  if(falhaInicial) await mensagem("Não foi possível carregar os dados. Atualize a página para tentar novamente.");
 });
 
-function marcarNavMobile(alvo){const mapa={home:"mobileNavHome",dashboard:"mobileNavDashboard",more:"mobileNavMore"};Object.values(mapa).forEach(id=>$(id)?.classList.remove("active"));$(mapa[alvo])?.classList.add("active")}
+function marcarNavMobile(alvo){const mapa={home:"mobileNavHome",dashboard:"mobileNavDashboard",cards:"mobileNavCards",more:"mobileNavMore"};Object.values(mapa).forEach(id=>$(id)?.classList.remove("active"));$(mapa[alvo])?.classList.add("active")}
 async function carregarContexto(){const r=await fetch("/api/app/contexto");if(!r.ok)return;const c=await r.json();contas=c.contas;grupos=c.grupos;window.usuarioAtual=c.usuario;$("usuarioNome").textContent=c.usuario.nome;$("usuarioAvatar").textContent=(c.usuario.nome||"U").trim().charAt(0).toUpperCase();if($("mobileGreeting"))$("mobileGreeting").textContent=`Olá, ${(c.usuario.nome||"").trim().split(/\\s+/)[0]||""}!`;const opts=contas.map(x=>`<option value="${x.id}">${escaparHtml(x.nome)}</option>`).join("");$("conta").innerHTML=opts;$("transferOrigem").innerHTML=opts;$("transferDestino").innerHTML=opts}
 
 function abrirContas(){fecharSubtelasPrincipais("accountsModal");toggleMenu(false);renderContas();abrirCamada("accountsModal")}
@@ -297,6 +302,22 @@ async function excluirTransferencia(id){if(!await confirmar("Deseja realmente ex
 let messageResolver=null;function mensagem(texto,titulo="LUVI Finanças"){return new Promise(resolve=>{$("messageTitle").textContent=titulo;$("messageText").textContent=texto;$("messageCancel").classList.add("hidden");$("messageOk").textContent="OK";messageResolver=resolve;abrirCamada("messageModal")})}function confirmar(texto){return new Promise(resolve=>{$("messageTitle").textContent="LUVI Finanças";$("messageText").textContent=texto;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Confirmar";messageResolver=resolve;abrirCamada("messageModal")})}function resolverMensagem(v){const r=messageResolver;messageResolver=null;if(r)r(v);fecharCamada("messageModal",false)}
 function solicitarTexto(titulo,label,placeholder){return new Promise(resolve=>{const antigo=$("messageText").innerHTML;$("messageTitle").textContent=titulo;$("messageText").innerHTML=`<label class="inline-label">${escaparHtml(label)}</label><input id="genericTextInput" class="generic-input" placeholder="${escaparHtml(placeholder)}">`;$("messageCancel").classList.remove("hidden");$("messageOk").textContent="Continuar";messageResolver=v=>{const valor=v?($("genericTextInput")?.value.trim()||""):null;$("messageText").innerHTML=antigo;resolve(valor)};abrirCamada("messageModal");setTimeout(()=>$("genericTextInput")?.focus(),30)})}
 function toast(texto){mensagem(texto)}
+// V19: navegação direta não chama rotinas de "Voltar" nem altera dados dos formulários.
+// A lógica de retorno em cascata permanece intacta nos botões próprios das subtelas.
+function luviFecharTelasDireto(){
+ document.querySelectorAll('.modal:not(.hidden)').forEach(el=>{
+  el.classList.add('hidden');delete el.dataset.openOrder;el.style.zIndex='';
+ });
+ $('usuarioDropdown')?.classList.add('hidden');
+ $('usuarioMenuButton')?.setAttribute('aria-expanded','false');
+ toggleMenu(false);
+ sincronizarCamadas();
+}
+function luviIrParaInicio(){
+ luviFecharTelasDireto();
+ window.scrollTo({top:0,behavior:'smooth'});
+ marcarNavMobile('home');
+}
 function fecharSubtelasPrincipais(excecao=null){["settingsModal","notificationsModal","reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
 function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
@@ -1041,7 +1062,7 @@ async function iniciarAvisosLuvi(){
 function selecionarAvisosLuvi(items,dias,today=hojeISO()){
  const date=new Date(`${today}T12:00:00`);date.setDate(date.getDate()+dias);
  const limite=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
- return items.filter(x=>x.tipo==='DESPESA'&&x.status==='PENDENTE'&&x.vencimento>=today&&x.vencimento<=limite).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+ return items.filter(x=>x.tipo==='DESPESA'&&x.status==='PENDENTE'&&x.vencimento<=limite).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
 }
 async function atualizarAvisosLuvi(){
  const request=++luviAvisosRequest;
@@ -1055,9 +1076,9 @@ async function atualizarAvisosLuvi(){
 function renderizarAvisosLuvi(){
  $('notificationsCount').textContent=String(luviAvisos.length);
  $('notificationsBadge').classList.toggle('hidden',!luviAvisos.length);
- $('notificationsBadge').setAttribute('aria-label',`${luviAvisos.length} contas a vencer`);
- $('notificationsMessage').textContent=luviAvisosErro||(luviAvisos.length?`${luviAvisos.length} contas · hoje até os próximos ${luviPreferencias.avisosDias} dias`:'Nenhuma conta a vencer neste prazo.');
- $('notificationsRows').innerHTML=luviAvisos.map(x=>`<div class="luvi-notification-row"><div><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)}</small></div><strong>${formatarMoeda(Number(x.valor))}</strong><button type="button" class="primary-button" data-notification-pay="${escaparHtml(String(x.id))}">Pagar</button></div>`).join('');
+ $('notificationsBadge').setAttribute('aria-label',`${luviAvisos.length} contas pendentes ou vencidas`);
+ $('notificationsMessage').textContent=luviAvisosErro||(luviAvisos.length?`${luviAvisos.filter(x=>x.vencimento<hojeISO()).length} vencida(s) · ${luviAvisos.length} aviso(s) no total`:'Nenhuma conta a vencer neste prazo.');
+ $('notificationsRows').innerHTML=luviAvisos.map(x=>`<div class="luvi-notification-row ${x.vencimento<hojeISO()?'luvi-notification-overdue':''}"><div><strong>${escaparHtml(x.descricao)}</strong><small>${formatarData(x.vencimento)} · ${escaparHtml(x.contaNome)} ${x.vencimento<hojeISO()?'· Vencida':''}</small></div><strong>${formatarMoeda(Number(x.valor))}</strong><button type="button" class="primary-button" data-notification-pay="${escaparHtml(String(x.id))}">Pagar</button></div>`).join('');
  $('notificationsRows').querySelectorAll('[data-notification-pay]').forEach(button=>button.onclick=async()=>{
   const item=luviAvisos.find(x=>String(x.id)===button.dataset.notificationPay);if(!item)return;
   button.disabled=true;
