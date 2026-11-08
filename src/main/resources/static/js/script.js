@@ -17,7 +17,7 @@ window.fetch=async(...args)=>{
 };
 const icone=(tipo)=>tipo==="editar"?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Zm16.7-9.8a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L15.5 5l3.5 3.5 1.7-1.8Z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7Zm10-17h-3.5l-1-1h-5l-1 1H3v2h18V4h-4Z"/></svg>';
 const botaoIcone=(tipo,acao,rotulo)=>`<button type="button" class="icon-action ${tipo}" onclick="${acao}" title="${rotulo}" aria-label="${rotulo}">${icone(tipo)}</button>`;
-const modais=()=>["settingsModal","notificationsModal","reportsModal","luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
+const modais=()=>["planejamentoGradeModal","settingsModal","notificationsModal","reportsModal","luviRecurrenceModal","shareAccountModal","membersModal","groupsModal","groupCreateModal","viewModal","categoryEditModal","categoriesModal","dashboardModal","accountEditModal","accountsModal","inviteGeneratedModal","inviteCodeModal","groupModal","transferModal","luviFutureModal","luviPayModal","luviCardModal","modal","messageModal"].map($).filter(x=>x&&!x.classList.contains("hidden"));
 
 document.addEventListener("DOMContentLoaded",async()=>{
   // v5.11.1: delegação central. Continua funcionando mesmo para conteúdo criado dinamicamente.
@@ -105,11 +105,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("copyInviteButton").onclick=()=>copiarConvite(false);
   $("fecharMessage").onclick=$("messageCancel").onclick=()=>resolverMensagem(false); $("messageOk").onclick=()=>resolverMensagem(true);
   window.luviLayerOrder=window.luviLayerOrder||0;
-  const splashInicio=Date.now();
   let falhaInicial=null;
   try { await carregarContexto(); await carregarCategorias(); await carregarDadosMes(); await iniciarAvisosLuvi(); }
   catch (e) { console.error("Falha ao carregar os dados iniciais", e); falhaInicial=e; }
-  finally { const restante=Math.max(0,700-(Date.now()-splashInicio)); setTimeout(()=>$("luviWelcomeSplash")?.classList.add("luvi-splash-done"),restante); }
   if(falhaInicial) await mensagem("Não foi possível carregar os dados. Atualize a página para tentar novamente.");
 });
 
@@ -276,6 +274,7 @@ function atualizarSelectCategorias(){
 }
 async function carregarDadosMes(){await Promise.all([carregarLancamentos(),carregarTransferencias(),carregarResumo()]);renderizar();if(luviPrevisaoAtiva)await carregarCompromissosLuvi();await atualizarAvisosLuvi()}
 function qs(){const m=dataAtual.getMonth()+1,a=dataAtual.getFullYear();return`mes=${m}&ano=${a}${contaSelecionada?`&contaId=${contaSelecionada}`:""}${grupoSelecionado?`&grupoId=${grupoSelecionado}`:""}`}
+function luviContextoTela(){return{ano:dataAtual.getFullYear(),mes:dataAtual.getMonth()+1,contaSelecionada,grupoSelecionado,contas};}
 async function carregarLancamentos(){const m=dataAtual.getMonth()+1,a=dataAtual.getFullYear();$("mesAtual").textContent=`${nomesMeses[m-1]} de ${a}`;const r=await fetch(`/api/lancamentos?${qs()}`);if(!r.ok){mensagem(await erro(r));return}lancamentos=await r.json()}
 async function carregarTransferencias(){const r=await fetch(`/api/transferencias?${qs()}`);transferencias=r.ok?await r.json():[]}
 async function carregarResumo(){const r=await fetch(`/api/lancamentos/resumo?${qs()}`);if(!r.ok)return;const x=await r.json();$("saldoInicial").textContent=formatarMoeda(+x.saldoInicial);$("totalReceitas").textContent=formatarMoeda(+x.receitas);$("totalDespesas").textContent=formatarMoeda(+x.despesas);$("saldoFinal").textContent=formatarMoeda(+x.saldoFinal);$("movimentacaoPeriodo").textContent=`Movimentação do período: ${formatarMoeda(+x.movimentacao)}`}
@@ -318,7 +317,7 @@ function luviIrParaInicio(){
  window.scrollTo({top:0,behavior:'smooth'});
  marcarNavMobile('home');
 }
-function fecharSubtelasPrincipais(excecao=null){["settingsModal","notificationsModal","reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
+function fecharSubtelasPrincipais(excecao=null){["planejamentoGradeModal","settingsModal","notificationsModal","reportsModal","categoriesModal","dashboardModal","accountsModal","groupModal","groupsModal","groupCreateModal","viewModal","membersModal","shareAccountModal"].forEach(id=>{if(id!==excecao){const el=$(id);if(el&&!el.classList.contains("hidden")){el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex=""}}});sincronizarCamadas()}
 function abrirCamada(id){const el=$(id);if(!el)return false;const ordem=++window.luviLayerOrder;const novaAbertura=el.classList.contains("hidden");if(novaAbertura)el.classList.remove("hidden");el.dataset.openOrder=String(ordem);el.style.zIndex=String(100+ordem);sincronizarCamadas();if(novaAbertura)registrarCamadaNoHistorico(id);return true}
 function fecharCamada(id){const el=$(id);if(!el||el.classList.contains("hidden"))return false;el.classList.add("hidden");delete el.dataset.openOrder;el.style.zIndex="";sincronizarCamadas();return true}
 function registrarCamada(){}

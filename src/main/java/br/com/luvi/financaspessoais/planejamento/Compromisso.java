@@ -9,7 +9,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "compromissos_financeiros")
+@Table(
+        name = "compromissos_financeiros",
+        indexes =
+                @Index(
+                        name = "idx_compromissos_linha_planejamento",
+                        columnList = "linha_planejamento"))
 public class Compromisso {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +43,10 @@ public class Compromisso {
 
     @Column(name = "serie_recorrencia", length = 36)
     private String serieRecorrencia;
+
+    /** Identifica a linha da grade. Cada mês continua sendo um compromisso, com valor próprio. */
+    @Column(name = "linha_planejamento", length = 36)
+    private String linhaPlanejamento;
 
     @Column(nullable = false, length = 20)
     private String status = "PENDENTE";
@@ -70,6 +79,14 @@ public class Compromisso {
 
     public void setSerieRecorrencia(String x) {
         serieRecorrencia = x;
+    }
+
+    public String getLinhaPlanejamento() {
+        return linhaPlanejamento;
+    }
+
+    public void setLinhaPlanejamento(String x) {
+        linhaPlanejamento = x;
     }
 
     public Long getId() {

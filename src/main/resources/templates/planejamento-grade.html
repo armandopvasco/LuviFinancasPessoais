@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="grade" id="planejamentoGradeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="planejamentoGradeTitle">
+  <div class="modal-content planejamento-grade-shell">
+    <div class="modal-header">
+      <h2 id="planejamentoGradeTitle">Despesas planejadas</h2>
+      <button type="button" data-close-modal="planejamentoGradeModal" class="close-button" aria-label="Voltar">&larr;</button>
+    </div>
+    <div class="modal-body planejamento-grade-body">
+      <p class="modal-help">Deslize para o lado para ver os outros meses. Digite o valor do mês. Pago não edita. Parcela de cartão fica em Cartões.</p>
+      <div class="planejamento-grade-toolbar">
+        <button type="button" id="planejamentoGradeAnterior" class="secondary-button planejamento-grade-seta" aria-label="Mês anterior">‹</button>
+        <button type="button" id="planejamentoGradeNova" class="primary-button">+ Linha</button>
+        <button type="button" id="planejamentoGradeProximo" class="secondary-button planejamento-grade-seta" aria-label="Próximo mês">›</button>
+        <p id="planejamentoGradeErro" class="form-error" role="alert"></p>
+      </div>
+      <form id="planejamentoGradeForm" class="pg-form hidden">
+        <label>Descrição<input id="pgDescricao" maxlength="200" required autocomplete="off"></label>
+        <label>Categoria<select id="pgCategoria" required></select></label>
+        <label id="pgContaCampo">Conta<select id="pgConta"></select></label>
+        <label>Vence no dia<input id="pgDia" type="number" min="1" max="31" inputmode="numeric" placeholder="1"></label>
+        <p class="pg-tipo-fixo">Tipo: A pagar. Em branco, o vencimento cai no dia 1.</p>
+        <div class="pg-form-acoes">
+          <button type="button" id="pgCancelarLinha" class="secondary-button">Cancelar</button>
+          <button type="submit" class="primary-button">Adicionar</button>
+        </div>
+        <p id="pgFormErro" class="form-error" role="alert"></p>
+      </form>
+      <div class="pg-meses" id="planejamentoGradeScroll"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
