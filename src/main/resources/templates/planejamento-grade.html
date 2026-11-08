@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="grade" id="planejamentoGradeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="planejamentoGradeTitle">
+  <div class="modal-content modal-wide planejamento-grade-shell">
+    <div class="modal-header">
+      <h2 id="planejamentoGradeTitle">Despesas planejadas</h2>
+      <button type="button" data-close-modal="planejamentoGradeModal" class="close-button" aria-label="Voltar">&larr;</button>
+    </div>
+    <div class="modal-body planejamento-grade-body">
+      <p id="planejamentoGradeContexto" class="modal-help"></p>
+      <p class="modal-help">Cada linha mostra descrição, categoria, conta, tipo e vencimento. A grade muda o valor do mês. Mês pago não edita. Parcelas de cartão ficam em Cartões.</p>
+      <div class="planejamento-grade-toolbar">
+        <button type="button" id="planejamentoGradeNova" class="primary-button">+ Linha</button>
+        <p id="planejamentoGradeErro" class="form-error" role="alert"></p>
+      </div>
+      <form id="planejamentoGradeForm" class="pg-form hidden">
+        <label>Descrição<input id="pgDescricao" maxlength="200" required autocomplete="off"></label>
+        <label>Categoria<select id="pgCategoria" required></select></label>
+        <label id="pgContaCampo">Conta<select id="pgConta"></select></label>
+        <label>Vence no dia<input id="pgDia" type="number" min="1" max="31" inputmode="numeric" placeholder="1"></label>
+        <p class="pg-tipo-fixo">Tipo: A pagar. Em branco, o vencimento cai no dia 1.</p>
+        <div class="pg-form-acoes">
+          <button type="button" id="pgCancelarLinha" class="secondary-button">Cancelar</button>
+          <button type="submit" class="primary-button">Adicionar</button>
+        </div>
+        <p id="pgFormErro" class="form-error" role="alert"></p>
+      </form>
+      <div class="planejamento-grade-frame">
+        <button type="button" id="planejamentoGradeAnterior" class="planejamento-grade-seta" aria-label="Meses anteriores">‹</button>
+        <div class="planejamento-grade-scroll" id="planejamentoGradeScroll">
+          <table class="planejamento-grade" id="planejamentoGradeTabela">
+            <thead id="planejamentoGradeCabeca"></thead>
+            <tbody id="planejamentoGradeCorpo"></tbody>
+            <tfoot id="planejamentoGradeTotais"></tfoot>
+          </table>
+        </div>
+        <button type="button" id="planejamentoGradeProximo" class="planejamento-grade-seta" aria-label="Próximos meses">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

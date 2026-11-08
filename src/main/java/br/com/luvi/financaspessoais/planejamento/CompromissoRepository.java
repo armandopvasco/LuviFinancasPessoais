@@ -10,6 +10,8 @@ public interface CompromissoRepository extends JpaRepository<Compromisso, Long> 
 
     List<Compromisso> findBySerieRecorrenciaOrderByVencimentoAscIdAsc(String serieRecorrencia);
 
+    List<Compromisso> findByLinhaPlanejamentoOrderByVencimentoAscIdAsc(String linhaPlanejamento);
+
     List<Compromisso> findByContaIdInOrderByVencimentoAscIdAsc(List<Long> ids);
 
     boolean existsByContaId(Long id);
