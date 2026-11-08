@@ -1,11 +1,12 @@
-// Grade de despesas planejadas. Cada célula é um compromisso; a linha guarda os outros campos.
-const PG_MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+// Meses lado a lado, cada um com a lista no tamanho do extrato. Cada valor é um compromisso.
+const PG_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 let pgInicio = new Date();
 let pgLista = [];
 let pgNovas = [];
 let pgCtx = null;
 let pgCategorias = new Map();
 let pgFila = Promise.resolve();
+let pgScrollAlvo = null;
 
 function pgAttr(t) {
   return String(t ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -20,7 +21,7 @@ function pgNovoId() {
 function pgEnfileirar(fn) {
   const exec = () => Promise.resolve().then(fn).catch(ex => {
     console.error(ex);
-    pgErro(ex.message || 'Não foi possível salvar a grade.');
+    pgErro(ex.message || 'Não foi possível salvar.');
   });
   pgFila = pgFila.then(exec, exec);
   return pgFila;
@@ -44,7 +45,7 @@ function pgMeses() {
       ano,
       mes,
       chave: `${ano}-${String(mes).padStart(2, '0')}`,
-      rotulo: `${PG_MESES[mes - 1]}/${String(ano).slice(2)}`
+      rotulo: `${PG_MESES[mes - 1]} de ${ano}`
     });
   }
   return lista;
@@ -137,19 +138,19 @@ function pgOpcoes(lista, atualId, atualNome) {
   const extras = atualId && !ids.has(Number(atualId)) ? [{id: atualId, nome: atualNome || 'Categoria'}] : [];
   return [...extras, ...lista].map(c => `<option value="${c.id}"${Number(c.id) === Number(atualId) ? ' selected' : ''}>${pgAttr(c.nome)}</option>`).join('');
 }
-function pgHtmlCelula(linha, mes) {
+function pgSel(key) {
+  const seguro = window.CSS?.escape ? CSS.escape(key) : String(key).replace(/"/g, '');
+  return `#planejamentoGradeScroll .pg-registro[data-key="${seguro}"]`;
+}
+function pgGrupo(el) {
+  const art = el?.classList?.contains('pg-registro') ? el : el?.closest?.('.pg-registro');
+  if (!art) return [];
+  return [...document.querySelectorAll(pgSel(art.dataset.key))];
+}
+function pgHtmlRegistro(linha, mes, contas) {
   const item = linha.celulas[mes.chave];
   const prevista = pgDataDoMes(mes.ano, mes.mes, linha.dia);
-  if (item && item.status === 'PAGO') {
-    return `<td class="pg-celula pg-bloqueada" data-mes="${mes.chave}"><span class="pg-pago-valor" data-id="${item.id}" data-valor="${Number(item.valor)}">${formatarMoeda(Number(item.valor))}</span><small>${formatarData(item.vencimento)} · pago</small></td>`;
-  }
-  const valor = item ? String(Number(item.valor)) : '';
-  const data = item ? item.vencimento : prevista;
-  const id = item ? ` data-id="${item.id}"` : '';
-  const venc = item ? ` data-vencimento="${item.vencimento}"` : '';
-  return `<td class="pg-celula" data-mes="${mes.chave}"><input class="pg-valor" type="number" inputmode="decimal" min="0" step="0.01" value="${pgAttr(valor)}" data-original="${pgAttr(valor)}" data-mes="${mes.chave}"${id}${venc} aria-label="${pgAttr(`${linha.descricao} em ${mes.rotulo}`)}" autocomplete="off"><small class="${item ? '' : 'pg-data-prevista'}">${formatarData(data)}</small></td>`;
-}
-function pgHtmlLinha(linha, meses, contas) {
+  const pago = item && item.status === 'PAGO';
   const valores = Object.values(linha.celulas);
   const somentePago = valores.length > 0 && valores.every(c => c.status === 'PAGO');
   const trava = somentePago ? ' disabled' : '';
@@ -157,62 +158,61 @@ function pgHtmlLinha(linha, meses, contas) {
   const categorias = pgCategorias.get(Number(linha.contaId)) || [];
   const variasContas = contas.length > 1 && !somentePago;
   const conta = variasContas
-    ? `<label class="pg-campo">Conta<select class="pg-conta" data-original="${linha.contaId}">${pgOpcoes(contas, linha.contaId, linha.contaNome)}</select></label>`
-    : `<span class="pg-meta">${pgAttr(linha.contaNome || '')} · ${tipo}</span>`;
-  const tipoExtra = variasContas ? `<span class="pg-meta">${tipo}</span>` : '';
-  return `<tr data-key="${pgAttr(linha.key)}" data-linha="${pgAttr(linha.linhaPlanejamento || '')}" data-conta="${linha.contaId}" data-tipo="${pgAttr(linha.tipo || 'DESPESA')}"${linha.nova ? ' data-nova="1"' : ''}>
-    <th class="pg-fixa" scope="row">
-      <input class="pg-desc" maxlength="200" value="${pgAttr(linha.descricao)}" data-original="${pgAttr(linha.descricao)}" aria-label="Descrição" autocomplete="off"${trava}>
-      ${linha.linhaPlanejamento ? '' : '<small class="pg-avulso">Avulso</small>'}
-      <label class="pg-campo">Categoria<select class="pg-cat" data-original="${linha.categoriaId}" aria-label="Categoria"${trava}>${pgOpcoes(categorias, linha.categoriaId, linha.categoria)}</select></label>
-      ${conta}
-      ${tipoExtra}
-      <label class="pg-campo">Vence no dia<input class="pg-dia" type="number" min="1" max="31" inputmode="numeric" value="${linha.dia || 1}" data-original="${linha.dia || 1}" aria-label="Dia do vencimento"${trava}></label>
-      <details class="pg-acoes"><summary aria-label="Ações da linha">⋯</summary><div class="pg-acoes-painel"><button type="button" data-pg-acao="copiar">Copiar este valor nos meses vazios à direita</button><button type="button" data-pg-acao="excluir">Excluir a linha</button></div></details>
-    </th>
-    ${meses.map(m => pgHtmlCelula(linha, m)).join('')}
-  </tr>`;
+    ? `<select class="pg-conta" data-original="${linha.contaId}" aria-label="Conta">${pgOpcoes(contas, linha.contaId, linha.contaNome)}</select>`
+    : `<span>${pgAttr(linha.contaNome || '')}</span>`;
+  const data = item ? item.vencimento : prevista;
+  const valor = item ? String(Number(item.valor)) : '';
+  const id = item ? ` data-id="${item.id}"` : '';
+  const venc = item && !pago ? ` data-vencimento="${item.vencimento}"` : '';
+  const quantia = pago
+    ? `<span class="pg-pago-valor" data-id="${item.id}" data-valor="${Number(item.valor)}">${formatarMoeda(Number(item.valor))}</span>`
+    : `<input class="pg-valor luvi-money-input" type="number" inputmode="decimal" min="0" step="0.01" value="${pgAttr(valor)}" data-original="${pgAttr(valor)}"${id}${venc} aria-label="${pgAttr(`${linha.descricao} em ${mes.rotulo}`)}" autocomplete="off">`;
+  return `<article class="pg-registro${pago ? ' pg-pago' : ''}" data-key="${pgAttr(linha.key)}" data-linha="${pgAttr(linha.linhaPlanejamento || '')}" data-conta="${linha.contaId}" data-tipo="${pgAttr(linha.tipo || 'DESPESA')}" data-mes="${mes.chave}" data-dia="${linha.dia || 1}"${linha.nova ? ' data-nova="1"' : ''}>
+    <div class="pg-titulo"><input class="pg-desc" maxlength="200" value="${pgAttr(linha.descricao)}" data-original="${pgAttr(linha.descricao)}" aria-label="Descrição" autocomplete="off"${trava}>${linha.linhaPlanejamento ? '' : '<small class="pg-avulso">Avulso</small>'}</div>
+    ${quantia}
+    <select class="pg-cat" data-original="${linha.categoriaId}" aria-label="Categoria"${trava}>${pgOpcoes(categorias, linha.categoriaId, linha.categoria)}</select>
+    <span class="pg-data${item ? '' : ' pg-data-prevista'}">${formatarData(data)}${pago ? ' · Pago' : ''}</span>
+    <span class="pg-conta-linha">${conta}<span class="pg-tipo">· ${tipo}</span></span>
+    <details class="pg-acoes"><summary aria-label="Ações da linha">⋯</summary><div class="pg-acoes-painel"><label class="pg-dia-campo">Vence no dia<input class="pg-dia" type="number" min="1" max="31" inputmode="numeric" value="${linha.dia || 1}" data-original="${linha.dia || 1}" aria-label="Dia do vencimento"${trava}></label><button type="button" data-pg-acao="copiar">Copiar este valor nos meses vazios à direita</button><button type="button" data-pg-acao="excluir">Excluir a linha</button></div></details>
+  </article>`;
 }
 function pgAtualizarTotais() {
-  const meses = [...document.querySelectorAll('#planejamentoGradeCabeca th[data-mes]')];
-  const foot = document.getElementById('planejamentoGradeTotais');
-  if (!foot || !meses.length) return;
-  const totais = meses.map(th => {
+  document.querySelectorAll('#planejamentoGradeScroll .pg-painel').forEach(painel => {
     let soma = 0;
-    document.querySelectorAll(`#planejamentoGradeCorpo .pg-celula[data-mes="${th.dataset.mes}"]`).forEach(td => {
-      const pago = td.querySelector('.pg-pago-valor');
+    painel.querySelectorAll('.pg-registro').forEach(art => {
+      const pago = art.querySelector('.pg-pago-valor');
       if (pago) soma += Number(pago.dataset.valor) || 0;
       else {
-        const input = td.querySelector('input.pg-valor');
+        const input = art.querySelector('input.pg-valor');
         if (input && input.value !== '') soma += Number(input.value) || 0;
       }
     });
-    return soma;
+    const total = painel.querySelector('.pg-painel-total');
+    if (total) total.textContent = formatarMoeda(soma);
   });
-  foot.innerHTML = `<tr><th class="pg-fixa" scope="row">Total</th>${totais.map(v => `<td>${formatarMoeda(v)}</td>`).join('')}</tr>`;
 }
 function pgRender() {
   const scroll = document.getElementById('planejamentoGradeScroll');
   const esquerda = scroll ? scroll.scrollLeft : 0;
-  const topo = scroll ? scroll.scrollTop : 0;
   const meses = pgMeses();
   const ctx = pgCtx || (typeof luviContextoTela === 'function' ? luviContextoTela() : {contas: []});
   const contas = pgContasDaVisao(ctx);
   const presentes = new Set((pgLista || []).map(l => l.linhaPlanejamento).filter(Boolean));
   const novas = pgNovas.filter(l => pgLinhaNaVisao(l, ctx) && !presentes.has(l.linhaPlanejamento));
   const linhas = [...novas, ...(pgLista || [])];
-  const contexto = document.getElementById('planejamentoGradeContexto');
-  if (contexto) contexto.textContent = `${document.getElementById('contextoTitulo')?.textContent || 'Visão geral'} · ${meses[0].rotulo} a ${meses[11].rotulo}`;
-  document.getElementById('planejamentoGradeCabeca').innerHTML =
-    `<tr><th class="pg-fixa" scope="col">Despesa</th>${meses.map(m => `<th class="pg-mes" scope="col" data-mes="${m.chave}">${m.rotulo}</th>`).join('')}</tr>`;
-  document.getElementById('planejamentoGradeCorpo').innerHTML = linhas.length
-    ? linhas.map(l => pgHtmlLinha(l, meses, contas)).join('')
-    : `<tr><td class="pg-vazio" colspan="${meses.length + 1}">Nenhuma despesa planejada nestes meses. Use + Linha para incluir aluguel, internet ou escola.</td></tr>`;
+  scroll.innerHTML = meses.map(mes => {
+    const itens = linhas.map(l => pgHtmlRegistro(l, mes, contas)).join('');
+    return `<section class="pg-painel" data-mes="${mes.chave}" aria-label="${pgAttr(mes.rotulo)}">
+      <header class="pg-painel-topo"><h3>${mes.rotulo}</h3><strong class="pg-painel-total">${formatarMoeda(0)}</strong></header>
+      <div class="pg-lista">${itens || '<p class="pg-vazio">Nenhuma despesa neste mês.</p>'}</div>
+    </section>`;
+  }).join('');
   pgAtualizarTotais();
-  if (scroll) {
-    scroll.scrollLeft = esquerda;
-    scroll.scrollTop = topo;
-  }
+  void scroll.offsetWidth;
+  if (pgScrollAlvo === 'fim') scroll.scrollLeft = scroll.scrollWidth;
+  else if (pgScrollAlvo === 'inicio') scroll.scrollLeft = 0;
+  else scroll.scrollLeft = esquerda;
+  pgScrollAlvo = null;
 }
 async function pgCarregar() {
   const ctx = typeof luviContextoTela === 'function' ? luviContextoTela() : {contas: [], ano: pgInicio.getFullYear(), mes: pgInicio.getMonth() + 1};
@@ -232,26 +232,28 @@ async function pgCarregar() {
   pgErro('');
   pgRender();
 }
-function pgLer(tr) {
-  const conta = tr.querySelector('.pg-conta');
-  const dia = Math.min(31, Math.max(1, Number(tr.querySelector('.pg-dia')?.value) || 1));
+function pgLer(art) {
+  const conta = art.querySelector('.pg-conta');
+  const dia = Math.min(31, Math.max(1, Number(art.querySelector('.pg-dia')?.value) || Number(art.dataset.dia) || 1));
   return {
-    key: tr.dataset.key,
-    descricao: tr.querySelector('.pg-desc')?.value.trim() || '',
-    categoriaId: Number(tr.querySelector('.pg-cat')?.value),
-    contaId: conta ? Number(conta.value) : Number(tr.dataset.conta),
+    key: art.dataset.key,
+    descricao: art.querySelector('.pg-desc')?.value.trim() || '',
+    categoriaId: Number(art.querySelector('.pg-cat')?.value),
+    contaId: conta ? Number(conta.value) : Number(art.dataset.conta),
     dia
   };
 }
-function pgIds(tr) {
-  return [...tr.querySelectorAll('[data-id]')].map(el => Number(el.dataset.id)).filter(Boolean);
+function pgIds(art) {
+  return [...new Set(pgGrupo(art).flatMap(a => [...a.querySelectorAll('[data-id]')].map(el => Number(el.dataset.id)).filter(Boolean)))];
 }
-function pgGarantirLinha(tr) {
-  if (!tr.dataset.linha) tr.dataset.linha = pgNovoId();
-  return tr.dataset.linha;
+function pgGarantirLinha(art) {
+  let linha = art.dataset.linha;
+  if (!linha) linha = pgNovoId();
+  pgGrupo(art).forEach(a => { a.dataset.linha = linha; });
+  return linha;
 }
-function pgSincronizarNova(tr, dados) {
-  const i = pgNovas.findIndex(l => l.key === tr.dataset.key);
+function pgSincronizarNova(art, dados) {
+  const i = pgNovas.findIndex(l => l.key === art.dataset.key);
   if (i < 0) return;
   const cat = (pgCategorias.get(dados.contaId) || []).find(c => Number(c.id) === dados.categoriaId);
   const conta = (pgCtx?.contas || []).find(c => c.id === dados.contaId);
@@ -263,41 +265,50 @@ function pgSincronizarNova(tr, dados) {
     contaId: dados.contaId,
     contaNome: conta ? conta.nome : pgNovas[i].contaNome,
     dia: dados.dia,
-    linhaPlanejamento: tr.dataset.linha || pgNovas[i].linhaPlanejamento
+    linhaPlanejamento: art.dataset.linha || pgNovas[i].linhaPlanejamento
   };
 }
-function pgDatasVazias(tr, dia) {
-  tr.querySelectorAll('.pg-celula').forEach(td => {
-    if (td.querySelector('.pg-pago-valor')) return;
-    const input = td.querySelector('input.pg-valor');
+function pgDatasVazias(art, dia) {
+  pgGrupo(art).forEach(a => {
+    if (a.querySelector('.pg-pago-valor')) return;
+    const input = a.querySelector('input.pg-valor');
     if (input?.dataset.id) return;
-    const [ano, mes] = td.dataset.mes.split('-').map(Number);
-    const small = td.querySelector('small');
-    if (small) small.textContent = formatarData(pgDataDoMes(ano, mes, dia));
+    const [ano, mes] = a.dataset.mes.split('-').map(Number);
+    const data = a.querySelector('.pg-data');
+    if (data) {
+      data.textContent = formatarData(pgDataDoMes(ano, mes, dia));
+      data.classList.add('pg-data-prevista');
+    }
+    a.dataset.dia = String(dia);
   });
 }
-function pgMetaMudou(tr) {
-  const desc = tr.querySelector('.pg-desc');
-  const cat = tr.querySelector('.pg-cat');
-  const dia = tr.querySelector('.pg-dia');
-  const conta = tr.querySelector('.pg-conta');
+function pgMetaMudou(art) {
+  const desc = art.querySelector('.pg-desc');
+  const cat = art.querySelector('.pg-cat');
+  const dia = art.querySelector('.pg-dia');
+  const conta = art.querySelector('.pg-conta');
   if (!desc || desc.value.trim() !== desc.dataset.original) return true;
   if (cat && cat.value !== cat.dataset.original) return true;
   if (dia && String(Math.min(31, Math.max(1, Number(dia.value) || 1))) !== String(dia.dataset.original)) return true;
   if (conta && conta.value !== conta.dataset.original) return true;
   return false;
 }
-async function pgPreencherCategorias(tr) {
-  const selectConta = tr.querySelector('.pg-conta');
+async function pgPreencherCategorias(art) {
+  const selectConta = art.querySelector('.pg-conta');
   if (!selectConta) return;
   const contaId = Number(selectConta.value);
   const lista = await pgCategoriasDaConta(contaId);
-  const select = tr.querySelector('.pg-cat');
-  const atual = Number(select.value);
-  select.innerHTML = pgOpcoes(lista, lista.some(c => Number(c.id) === atual) ? atual : lista[0]?.id, '');
+  const atual = Number(art.querySelector('.pg-cat')?.value);
+  const html = pgOpcoes(lista, lista.some(c => Number(c.id) === atual) ? atual : lista[0]?.id, '');
+  pgGrupo(art).forEach(a => {
+    const sel = a.querySelector('.pg-cat');
+    if (sel) sel.innerHTML = html;
+    const conta = a.querySelector('.pg-conta');
+    if (conta) conta.value = String(contaId);
+  });
 }
-async function pgSalvarMetadados(tr) {
-  const dados = pgLer(tr);
+async function pgSalvarMetadados(art) {
+  const dados = pgLer(art);
   if (!dados.descricao) {
     pgErro('Informe a descrição da linha.');
     return;
@@ -306,22 +317,26 @@ async function pgSalvarMetadados(tr) {
     pgErro('Escolha a categoria e a conta.');
     return;
   }
-  pgSincronizarNova(tr, dados);
-  const ids = pgIds(tr);
+  pgSincronizarNova(art, dados);
+  const ids = pgIds(art);
   if (!ids.length) {
-    pgDatasVazias(tr, dados.dia);
-    const desc = tr.querySelector('.pg-desc');
-    if (desc) desc.dataset.original = dados.descricao;
-    const cat = tr.querySelector('.pg-cat');
-    if (cat) cat.dataset.original = String(dados.categoriaId);
-    const dia = tr.querySelector('.pg-dia');
-    if (dia) dia.dataset.original = String(dados.dia);
-    const conta = tr.querySelector('.pg-conta');
-    if (conta) conta.dataset.original = String(dados.contaId);
+    pgDatasVazias(art, dados.dia);
+    pgGrupo(art).forEach(a => {
+      const desc = a.querySelector('.pg-desc');
+      if (desc) { desc.value = dados.descricao; desc.dataset.original = dados.descricao; }
+      const cat = a.querySelector('.pg-cat');
+      if (cat) cat.dataset.original = String(dados.categoriaId);
+      const dia = a.querySelector('.pg-dia');
+      if (dia) { dia.value = String(dados.dia); dia.dataset.original = String(dados.dia); }
+      const conta = a.querySelector('.pg-conta');
+      if (conta) conta.dataset.original = String(dados.contaId);
+      a.dataset.conta = String(dados.contaId);
+      a.dataset.dia = String(dados.dia);
+    });
     pgErro('');
     return;
   }
-  const linha = pgGarantirLinha(tr);
+  const linha = pgGarantirLinha(art);
   const r = await fetch(`/api/planejamento/linhas/${encodeURIComponent(linha)}`, {
     method: 'PUT',
     headers: {'Content-Type': 'application/json'},
@@ -350,8 +365,8 @@ function pgMudouValor(input) {
 }
 async function pgGravarCelula(input) {
   if (!pgMudouValor(input) || input.dataset.salvando === '1') return;
-  const tr = input.closest('tr');
-  const dados = pgLer(tr);
+  const art = input.closest('.pg-registro');
+  const dados = pgLer(art);
   if (!dados.descricao || !dados.categoriaId || !dados.contaId) {
     pgErro('A linha precisa de descrição, categoria e conta.');
     input.value = input.dataset.original || '';
@@ -359,8 +374,8 @@ async function pgGravarCelula(input) {
   }
   input.dataset.salvando = '1';
   try {
-    const linha = pgGarantirLinha(tr);
-    const [ano, mes] = input.dataset.mes.split('-').map(Number);
+    const linha = pgGarantirLinha(art);
+    const [ano, mes] = art.dataset.mes.split('-').map(Number);
     const apagar = input.value.trim() === '';
     const r = await fetch('/api/planejamento/celula', {
       method: 'PUT',
@@ -374,7 +389,7 @@ async function pgGravarCelula(input) {
         descricao: dados.descricao,
         valor: apagar ? null : Number(input.value),
         vencimento: input.dataset.vencimento || pgDataDoMes(ano, mes, dados.dia),
-        vincular: pgIds(tr)
+        vincular: pgIds(art)
       })
     });
     if (!r.ok) {
@@ -383,48 +398,51 @@ async function pgGravarCelula(input) {
       return;
     }
     const corpo = await r.json();
+    const data = art.querySelector('.pg-data');
     if (corpo.removido) {
       delete input.dataset.id;
       delete input.dataset.vencimento;
       input.dataset.original = '';
       input.value = '';
-      const small = input.parentElement.querySelector('small');
-      if (small) {
-        small.textContent = formatarData(pgDataDoMes(ano, mes, dados.dia));
-        small.classList.add('pg-data-prevista');
+      if (data) {
+        data.textContent = formatarData(pgDataDoMes(ano, mes, dados.dia));
+        data.classList.add('pg-data-prevista');
       }
     } else {
       input.dataset.id = String(corpo.id);
       input.dataset.original = String(Number(corpo.valor));
       input.value = input.dataset.original;
-      if (corpo.vencimento) {
+      if (corpo.vencimento && data) {
         input.dataset.vencimento = corpo.vencimento;
-        const small = input.parentElement.querySelector('small');
-        if (small) {
-          small.textContent = formatarData(corpo.vencimento);
-          small.classList.remove('pg-data-prevista');
-        }
+        data.textContent = formatarData(corpo.vencimento);
+        data.classList.remove('pg-data-prevista');
       }
     }
-    if (corpo.linhaPlanejamento) tr.dataset.linha = corpo.linhaPlanejamento;
-    tr.querySelector('.pg-avulso')?.remove();
-    pgSincronizarNova(tr, dados);
+    pgGrupo(art).forEach(a => {
+      if (corpo.linhaPlanejamento) a.dataset.linha = corpo.linhaPlanejamento;
+      a.querySelector('.pg-avulso')?.remove();
+    });
+    pgSincronizarNova(art, dados);
     pgErro('');
     pgAtualizarTotais();
   } finally {
     input.dataset.salvando = '0';
   }
 }
-async function pgCopiar(tr) {
-  let origem = tr.dataset.copiaMes;
-  const origemInput = origem ? tr.querySelector(`input.pg-valor[data-mes="${origem}"]`) : null;
-  const preenchidos = [...tr.querySelectorAll('input.pg-valor')].filter(i => i.value.trim() !== '');
+async function pgCopiar(art) {
+  const artigos = pgGrupo(art).sort((a, b) => a.dataset.mes.localeCompare(b.dataset.mes));
+  const origemInput = art.querySelector('input.pg-valor');
+  const preenchidos = artigos.map(a => a.querySelector('input.pg-valor')).filter(i => i && i.value.trim() !== '');
   const fonte = origemInput && origemInput.value.trim() !== '' ? origemInput : preenchidos[preenchidos.length - 1];
   if (!fonte || fonte.value.trim() === '') {
     pgErro('Digite um valor para copiar aos meses vazios à direita.');
     return;
   }
-  const alvos = [...tr.querySelectorAll('input.pg-valor')].filter(i => i.dataset.mes > fonte.dataset.mes && i.value.trim() === '' && !i.dataset.id);
+  const mesFonte = fonte.closest('.pg-registro').dataset.mes;
+  const alvos = artigos
+    .filter(a => a.dataset.mes > mesFonte)
+    .map(a => a.querySelector('input.pg-valor'))
+    .filter(i => i && i.value.trim() === '' && !i.dataset.id);
   if (!alvos.length) {
     pgErro('Não há meses vazios à direita deste valor.');
     return;
@@ -434,20 +452,19 @@ async function pgCopiar(tr) {
     await pgGravarCelula(input);
     if (input.value.trim() === '') return;
   }
-  tr.querySelector('.pg-acoes')?.removeAttribute('open');
+  art.querySelector('.pg-acoes')?.removeAttribute('open');
   pgErro('');
 }
-async function pgExcluir(tr) {
-  const nome = tr.querySelector('.pg-desc')?.value.trim() || 'esta linha';
+async function pgExcluir(art) {
+  const nome = art.querySelector('.pg-desc')?.value.trim() || 'esta linha';
   if (!await confirmar(`Excluir os meses pendentes de “${nome}”? Meses já pagos permanecem no extrato.`)) return;
-  const ids = pgIds(tr);
+  const ids = pgIds(art);
   if (!ids.length) {
-    pgNovas = pgNovas.filter(l => l.key !== tr.dataset.key);
-    tr.remove();
-    pgAtualizarTotais();
+    pgNovas = pgNovas.filter(l => l.key !== art.dataset.key);
+    pgRender();
     return;
   }
-  const linha = pgGarantirLinha(tr);
+  const linha = pgGarantirLinha(art);
   const r = await fetch(`/api/planejamento/linhas/${encodeURIComponent(linha)}`, {
     method: 'DELETE',
     headers: {'Content-Type': 'application/json'},
@@ -457,7 +474,7 @@ async function pgExcluir(tr) {
     pgErro(await erro(r));
     return;
   }
-  pgNovas = pgNovas.filter(l => l.linhaPlanejamento !== linha && l.key !== tr.dataset.key);
+  pgNovas = pgNovas.filter(l => l.linhaPlanejamento !== linha && l.key !== art.dataset.key);
   await pgCarregar();
 }
 async function pgAbrir() {
@@ -467,12 +484,13 @@ async function pgAbrir() {
   const ano = ctx?.ano || new Date().getFullYear();
   const mes = ctx?.mes || new Date().getMonth() + 1;
   pgInicio = new Date(ano, mes - 1, 1);
+  pgScrollAlvo = 'inicio';
   document.getElementById('planejamentoGradeForm')?.classList.add('hidden');
   abrirCamada('planejamentoGradeModal');
   try {
     await pgCarregar();
   } catch (ex) {
-    pgErro(ex.message || 'Não foi possível abrir a grade.');
+    pgErro(ex.message || 'Não foi possível abrir as despesas planejadas.');
   }
 }
 async function pgAbrirFormulario() {
@@ -531,7 +549,30 @@ function pgAdicionarLinha(e) {
   });
   document.getElementById('planejamentoGradeForm').classList.add('hidden');
   pgRender();
-  document.querySelector(`#planejamentoGradeCorpo tr[data-key="${linha}"] input.pg-valor`)?.focus();
+  const scroll = document.getElementById('planejamentoGradeScroll');
+  const paineis = [...scroll.querySelectorAll('.pg-painel')];
+  const visivel = paineis.find(p => Math.abs(p.offsetLeft - scroll.scrollLeft) < 8) || paineis[0];
+  const chave = window.CSS?.escape ? CSS.escape(linha) : linha;
+  visivel?.querySelector(`.pg-registro[data-key="${chave}"] input.pg-valor`)?.focus();
+}
+async function pgMover(direcao) {
+  const scroll = document.getElementById('planejamentoGradeScroll');
+  const painel = scroll.querySelector('.pg-painel');
+  const passo = painel ? painel.offsetWidth : scroll.clientWidth;
+  const maximo = scroll.scrollWidth - scroll.clientWidth - 2;
+  if (direcao < 0 && scroll.scrollLeft <= 2) {
+    pgScrollAlvo = 'inicio';
+    pgInicio = new Date(pgInicio.getFullYear(), pgInicio.getMonth() - 1, 1);
+    await pgCarregar();
+    return;
+  }
+  if (direcao > 0 && scroll.scrollLeft >= maximo) {
+    pgScrollAlvo = 'fim';
+    pgInicio = new Date(pgInicio.getFullYear(), pgInicio.getMonth() + 1, 1);
+    await pgCarregar();
+    return;
+  }
+  scroll.scrollTo({left: scroll.scrollLeft + direcao * passo, behavior: 'smooth'});
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -541,43 +582,37 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pgCancelarLinha')?.addEventListener('click', () => document.getElementById('planejamentoGradeForm')?.classList.add('hidden'));
   document.getElementById('planejamentoGradeForm')?.addEventListener('submit', pgAdicionarLinha);
   document.getElementById('pgConta')?.addEventListener('change', () => pgEnfileirar(pgFormCategorias));
-  document.getElementById('planejamentoGradeAnterior')?.addEventListener('click', () => pgEnfileirar(async () => {
-    pgInicio = new Date(pgInicio.getFullYear(), pgInicio.getMonth() - 1, 1);
-    await pgCarregar();
-  }));
-  document.getElementById('planejamentoGradeProximo')?.addEventListener('click', () => pgEnfileirar(async () => {
-    pgInicio = new Date(pgInicio.getFullYear(), pgInicio.getMonth() + 1, 1);
-    await pgCarregar();
-  }));
-  const tabela = document.getElementById('planejamentoGradeTabela');
-  tabela?.addEventListener('focusin', e => {
+  document.getElementById('planejamentoGradeAnterior')?.addEventListener('click', () => pgEnfileirar(() => pgMover(-1)));
+  document.getElementById('planejamentoGradeProximo')?.addEventListener('click', () => pgEnfileirar(() => pgMover(1)));
+  const faixa = document.getElementById('planejamentoGradeScroll');
+  faixa?.addEventListener('focusin', e => {
     const input = e.target.closest('input.pg-valor');
-    if (input) input.closest('tr').dataset.copiaMes = input.dataset.mes;
+    if (input) input.closest('.pg-registro').dataset.copiaMes = input.closest('.pg-registro').dataset.mes;
   });
-  tabela?.addEventListener('input', e => {
+  faixa?.addEventListener('input', e => {
     if (e.target.classList?.contains('pg-valor')) pgAtualizarTotais();
   });
-  tabela?.addEventListener('focusout', e => {
+  faixa?.addEventListener('focusout', e => {
     const input = e.target.closest('input.pg-valor');
     if (!input || !pgMudouValor(input)) return;
     pgEnfileirar(() => pgGravarCelula(input));
   });
-  tabela?.addEventListener('change', e => {
+  faixa?.addEventListener('change', e => {
     const el = e.target;
     if (!el.matches?.('.pg-desc, .pg-cat, .pg-conta, .pg-dia')) return;
-    const tr = el.closest('tr');
+    const art = el.closest('.pg-registro');
     pgEnfileirar(async () => {
-      if (el.classList.contains('pg-conta')) await pgPreencherCategorias(tr);
-      if (!pgMetaMudou(tr)) return;
-      await pgSalvarMetadados(tr);
+      if (el.classList.contains('pg-conta')) await pgPreencherCategorias(art);
+      if (!pgMetaMudou(art)) return;
+      await pgSalvarMetadados(art);
     });
   });
-  tabela?.addEventListener('click', e => {
+  faixa?.addEventListener('click', e => {
     const btn = e.target.closest('[data-pg-acao]');
     if (!btn) return;
     e.preventDefault();
-    const tr = btn.closest('tr');
-    pgEnfileirar(() => btn.dataset.pgAcao === 'copiar' ? pgCopiar(tr) : pgExcluir(tr));
+    const art = btn.closest('.pg-registro');
+    pgEnfileirar(() => btn.dataset.pgAcao === 'copiar' ? pgCopiar(art) : pgExcluir(art));
   });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;

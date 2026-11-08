@@ -2,16 +2,17 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="grade" id="planejamentoGradeModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="planejamentoGradeTitle">
-  <div class="modal-content modal-wide planejamento-grade-shell">
+  <div class="modal-content planejamento-grade-shell">
     <div class="modal-header">
       <h2 id="planejamentoGradeTitle">Despesas planejadas</h2>
       <button type="button" data-close-modal="planejamentoGradeModal" class="close-button" aria-label="Voltar">&larr;</button>
     </div>
     <div class="modal-body planejamento-grade-body">
-      <p id="planejamentoGradeContexto" class="modal-help"></p>
-      <p class="modal-help">Cada linha mostra descrição, categoria, conta, tipo e vencimento. A grade muda o valor do mês. Mês pago não edita. Parcelas de cartão ficam em Cartões.</p>
+      <p class="modal-help">Deslize para o lado para ver os outros meses. Digite o valor do mês. Pago não edita. Parcela de cartão fica em Cartões.</p>
       <div class="planejamento-grade-toolbar">
+        <button type="button" id="planejamentoGradeAnterior" class="secondary-button planejamento-grade-seta" aria-label="Mês anterior">‹</button>
         <button type="button" id="planejamentoGradeNova" class="primary-button">+ Linha</button>
+        <button type="button" id="planejamentoGradeProximo" class="secondary-button planejamento-grade-seta" aria-label="Próximo mês">›</button>
         <p id="planejamentoGradeErro" class="form-error" role="alert"></p>
       </div>
       <form id="planejamentoGradeForm" class="pg-form hidden">
@@ -26,17 +27,7 @@
         </div>
         <p id="pgFormErro" class="form-error" role="alert"></p>
       </form>
-      <div class="planejamento-grade-frame">
-        <button type="button" id="planejamentoGradeAnterior" class="planejamento-grade-seta" aria-label="Meses anteriores">‹</button>
-        <div class="planejamento-grade-scroll" id="planejamentoGradeScroll">
-          <table class="planejamento-grade" id="planejamentoGradeTabela">
-            <thead id="planejamentoGradeCabeca"></thead>
-            <tbody id="planejamentoGradeCorpo"></tbody>
-            <tfoot id="planejamentoGradeTotais"></tfoot>
-          </table>
-        </div>
-        <button type="button" id="planejamentoGradeProximo" class="planejamento-grade-seta" aria-label="Próximos meses">›</button>
-      </div>
+      <div class="pg-meses" id="planejamentoGradeScroll"></div>
     </div>
   </div>
 </div>
